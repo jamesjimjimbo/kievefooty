@@ -1,0 +1,25 @@
+import type { Metadata } from "next";
+import "./globals.css";
+
+export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  title: { default: "Kieve Footy", template: "%s · Kieve Footy" },
+  description: "A private Premier League picks competition between friends.",
+  openGraph: {
+    title: "Kieve Footy",
+    description: "Pick smart. Back your mates. Win the week.",
+    images: ["/og.jpg"],
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}

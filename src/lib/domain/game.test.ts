@@ -1,0 +1,10 @@
+import { describe,expect,it } from "vitest";
+import { fixtures } from "../demo-data";
+import { bankroll,createAutoPicks,performance,settleChallenge,settleOnce,settleWager,validateWeeklyStakes,type LedgerEntry } from "./game";
+describe("weekly stakes",()=>{it.each([[9,1,true],[5,5,true],[1,9,true],[10,0,false],[6,5,false]])("%i + %i", (a,b,valid)=>expect(validateWeeklyStakes(a,b)).toBe(valid))});
+describe("settlement",()=>{it("returns net profit",()=>{expect(settleWager(4,3,true)).toBe(8);expect(settleWager(4,3,false)).toBe(-4)})});
+describe("challenge",()=>{it("transfers ten",()=>expect(settleChallenge(8,-2)).toEqual({challenger:10,opponent:-10,consumed:true}));it("consumes ties",()=>expect(settleChallenge(2,2)).toEqual({challenger:0,opponent:0,consumed:true}))});
+it("allows negative bankroll and later credit",()=>{expect(bankroll([{amount:4},{amount:-10}])).toBe(-6);expect(bankroll([{amount:4},{amount:-10},{amount:10}])).toBe(4)});
+it("excludes credits and challenges from half performance",()=>{const e=[{id:"1",userId:"u",weekId:"w",type:"weekly_credit",referenceId:"c",amount:10},{id:"2",userId:"u",weekId:"w",type:"weekly_bet_win",referenceId:"b",amount:8},{id:"3",userId:"u",weekId:"w",type:"challenge_loss",referenceId:"x",amount:-10}] as LedgerEntry[];expect(performance(e,"first",{w:"first"})).toBe(8);expect(performance(e)).toBe(-2)});
+it("auto-picks both favorites at five",()=>expect(createAutoPicks(fixtures)).toEqual([{fixtureId:"ars-liv",outcome:"home",stake:5,source:"auto"},{fixtureId:"bha-che",outcome:"away",stake:5,source:"auto"}]));
+it("does not duplicate settlement",()=>{const entry={id:"1",userId:"u",type:"weekly_bet_win",referenceId:"pick",amount:8} as LedgerEntry;expect(settleOnce(settleOnce([],entry),{...entry,id:"2"})).toHaveLength(1)});

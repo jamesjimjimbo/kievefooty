@@ -1,0 +1,7 @@
+import type { Metadata } from "next";import { AppShell } from "@/components/app-shell";
+export const metadata:Metadata={title:"Profile"};
+export default function Page(){return <AppShell><main className="content"><div className="page-head"><div><p className="eyebrow">Your clubhouse</p><h1>Profile</h1></div></div>
+<section className="card"><div style={{display:"flex",alignItems:"center",gap:14}}><span className="avatar" style={{width:54,height:54,background:"var(--forest)",color:"white",fontSize:16}}>JM</span><div><h2 style={{margin:0}}>James McKenna</h2><p className="subtle" style={{margin:0}}>james@example.com · Admin</p></div></div></section>
+<div className="grid-2" style={{marginTop:14}}><section className="card"><p className="eyebrow">Bankroll</p><h1 style={{margin:0}}>42.5</h1><p className="subtle">Available points</p></section><section className="card"><p className="eyebrow">Challenge tokens</p><h1 style={{margin:0}}>7</h1><p className="subtle">Opponents remaining</p></section></div>
+<section className="card" style={{marginTop:14}}><h2>Emails</h2>{["New week opens","Deadline reminders","Challenge notifications","Weekly results"].map(x=><div className="setting" key={x}><span><b>{x}</b><small className="subtle" style={{display:"block"}}>Keep me in the loop</small></span><i className="toggle"/></div>)}</section>
+<a href="/auth/sign-in" className="secondary" style={{display:"grid",placeItems:"center",marginTop:14}}>Sign out</a></main></AppShell>}
