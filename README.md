@@ -12,17 +12,17 @@ pnpm install
 pnpm dev
 ```
 
-Open `http://localhost:3000`. With no Supabase values the product runs in documented demo mode using seeded TypeScript data; no insecure fake auth users are created.
+Open `http://localhost:3000`. Protected pages require a confirmed Supabase account.
 
 ## Supabase setup
 
 1. Create a Supabase project and copy its project URL and anon key into `.env.local`.
 2. Link the Supabase CLI, then run `supabase db push`.
 3. Run `supabase db seed`, or paste `supabase/seed.sql` in the SQL editor.
-4. Create the first user in Authentication. Insert a matching `profiles` row with the same UUID, then set `is_admin = true` for that user.
+4. Create the first user through `/auth/sign-up`; the database trigger creates its profile automatically. Then set `is_admin = true` for that profile in the Supabase Table Editor.
 5. Add fixtures/odds in the SQL editor or extend the `/admin` mutations.
 
-The browser receives only the anon key. No service-role key is required by v1. Admin status, deadlines, visibility, challenge uniqueness and ledger access are enforced in Postgres/RLS. Before production, enable your preferred Supabase email sign-in settings and replace demo reads with the provided clients.
+The browser receives only the publishable key. No service-role key is required by v1. Admin status, deadlines, visibility, challenge uniqueness and ledger access are enforced in Postgres/RLS.
 
 ## Checks
 

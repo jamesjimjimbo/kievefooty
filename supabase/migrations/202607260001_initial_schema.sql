@@ -120,7 +120,7 @@ alter table public.teams enable row level security; alter table public.competiti
 alter table public.fixtures enable row level security; alter table public.fixture_odds enable row level security;
 alter table public.weekly_submissions enable row level security; alter table public.picks enable row level security;
 alter table public.challenges enable row level security; alter table public.points_ledger enable row level security;
-create policy "read own profile" on public.profiles for select using(id=auth.uid() or is_admin());
+create policy "league reads profiles" on public.profiles for select to authenticated using(true);
 create policy "update own display name" on public.profiles for update using(id=auth.uid()) with check(id=auth.uid());
 create policy "own email preferences" on public.email_preferences for all using(user_id=auth.uid()) with check(user_id=auth.uid());
 create policy "authenticated reads schedule" on public.teams for select to authenticated using(true);
