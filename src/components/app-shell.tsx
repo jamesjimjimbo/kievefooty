@@ -1,12 +1,13 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, CalendarDays, ListChecks, Trophy, UserRound } from "lucide-react";
+import { BookOpen, CalendarDays, ListChecks, Medal, Trophy, UserRound } from "lucide-react";
 import { useEffect,useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 const nav = [
   {href:"/picks",label:"Picks",Icon:ListChecks},{href:"/standings",label:"Standings",Icon:Trophy},
-  {href:"/season",label:"Season",Icon:CalendarDays},{href:"/profile",label:"Profile",Icon:UserRound},
+  {href:"/competitions",label:"Competitions",Icon:Medal},{href:"/season",label:"Season",Icon:CalendarDays},
+  {href:"/profile",label:"Profile",Icon:UserRound},
 ];
 export function AppShell({children}:{children:React.ReactNode}) {
   const pathname=usePathname();

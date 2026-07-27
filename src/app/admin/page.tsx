@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { CalendarCog, ClipboardList, Coins, Gauge, Sparkles, Swords, UsersRound } from "lucide-react";
+import { CalendarCog, ClipboardList, Coins, Gauge, RefreshCw, Sparkles, Swords, UsersRound } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
 import { createClient } from "@/lib/supabase/server";
-import { setGameOfWeek, setMarketCurrentResults, syncLockToFirstKickoff, toggleFixtureEligibility } from "./actions";
+import { refreshLeagueTable, setGameOfWeek, syncLockToFirstKickoff, toggleFixtureEligibility } from "./actions";
 
 export const metadata:Metadata={title:"Admin"};
 export const dynamic="force-dynamic";
@@ -13,7 +13,6 @@ type FixtureRow={
   home:{name:string}|null;away:{name:string}|null;
 };
 type WeekRow={id:string;number:number|null;label:string;lock_at:string|null;status:string;fixtures:FixtureRow[]};
-type MarketRow={id:string;title:string;max_selections:number;current_option_ids:string[];season_market_options:{id:string;label:string;sort_order:number}[]};
 
 const formatDate=(value:string)=>new Intl.DateTimeFormat("en-US",{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(value));
 
@@ -25,16 +24,16 @@ export default async function Page(){
   const {data:profile}=await supabase.from("profiles").select("is_admin").eq("id",user.id).single();
   if(!profile?.is_admin)redirect("/picks");
 
-  const [{data:weekData},{count:ledger},{count:challenges},{count:players},{count:submitted},{data:marketData}]=await Promise.all([
+  const [{data:weekData},{count:ledger},{count:challenges},{count:players},{count:submitted},{data:latestTable}]=await Promise.all([
     supabase.from("competition_weeks").select("id,number,label,lock_at,status,fixtures(id,competition_week_id,kickoff_at,is_eligible,is_gotw,home:teams!fixtures_home_team_id_fkey(name),away:teams!fixtures_away_team_id_fkey(name))").in("status",["draft","open","locked"]).order("start_date"),
     supabase.from("points_ledger").select("*",{count:"exact",head:true}),
     supabase.from("challenges").select("*",{count:"exact",head:true}),
     supabase.from("profiles").select("*",{count:"exact",head:true}),
     supabase.from("weekly_submissions").select("*",{count:"exact",head:true}),
-    supabase.from("season_markets").select("id,title,max_selections,current_option_ids,season_market_options(id,label,sort_order)").in("status",["open","locked"]).order("display_order"),
+    supabase.from("league_table_snapshots").select("captured_at,provider").order("captured_at",{ascending:false}).limit(1).maybeSingle(),
   ]);
   const weeks=(weekData??[]) as unknown as WeekRow[];
-  const markets=(marketData??[]) as unknown as MarketRow[];
+  const tableFeedConfigured=Boolean(process.env.FOOTBALL_DATA_API_KEY);
   const summaries=[
     {label:"Players",value:players??0,Icon:UsersRound},
     {label:"Submissions",value:submitted??0,Icon:ClipboardList},
@@ -56,6 +55,6 @@ export default async function Page(){
         </div>
       </div>)}</div>
     </article>):<div className="card"><h2>No configurable weeks</h2><p className="subtle">Create the next Competition Week and fixtures in Supabase, then return here to choose the weekly slate.</p></div>}</section>
-    {markets.length>0&&<section className="admin-markets"><div className="section-label"><div><p className="eyebrow">Projection controls</p><h2>Current season results</h2></div></div><div className="notice admin-market-note"><Sparkles size={18}/><span>Choose the teams currently occupying each result. This powers the optional “assume current results stand” table; it does not settle points.</span></div>{markets.map(market=><form action={setMarketCurrentResults} className="card admin-market" key={market.id}><input type="hidden" name="marketId" value={market.id}/><header><div><h3>{market.title}</h3><p>Select up to {market.max_selections} current result{market.max_selections===1?"":"s"}.</p></div><button className="secondary" type="submit">Update projection</button></header><div className="admin-market-options">{[...market.season_market_options].sort((a,b)=>a.sort_order-b.sort_order).map(option=><label key={option.id}><input type="checkbox" name="optionId" value={option.id} defaultChecked={(market.current_option_ids??[]).includes(option.id)}/><span>{option.label}</span></label>)}</div></form>)}</section>}
+    <section className="admin-markets"><div className="section-label"><div><p className="eyebrow">Forecast</p><h2>Current league table</h2></div></div><div className="card forecast-sync"><span className="icon-box"><Sparkles size={19}/></span><div><b>{latestTable?`Updated ${formatDate(latestTable.captured_at)}`:tableFeedConfigured?"Ready for first refresh":"Table feed not connected"}</b><p>The projected Full Competition table assumes today&apos;s Premier League positions become final. Refreshing makes one provider request and saves the result for everyone.</p></div><form action={refreshLeagueTable}><button className="secondary" type="submit" disabled={!tableFeedConfigured}><RefreshCw size={15}/> {tableFeedConfigured?"Refresh table":"API key needed"}</button></form></div></section>
   </main></AppShell>;
 }

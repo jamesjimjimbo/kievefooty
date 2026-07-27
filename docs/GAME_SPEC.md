@@ -22,15 +22,24 @@ A challenge is directional, requires no acceptance, and must be made before lock
 
 ## Standings
 
-First Half and Second Half include only normal weekly bet wins and losses assigned to that half. Full Competition includes normal weekly betting, challenge transfers, and settled season-long competition results. Weekly credits are excluded everywhere. Prize shares are informational: 15% First Half, 15% Second Half and 70% Full Competition.
+First Half and Second Half include only normal weekly bet wins and losses assigned to that half. Full Competition includes normal weekly betting, challenge transfers, and settled season-long competition results. Weekly credits are excluded everywhere. Prize shares are informational: 15% First Half, 10% Most Accurate Picker, 15% Second Half and 60% Full Competition.
 
-The Full Competition table has an optional projection mode. It adds the points a player would receive if each administrator-maintained current season result became final. These projected points are read-only and never create ledger entries.
+The Full Competition table has an optional projection mode. It adds the points a player would receive if the latest stored Premier League table became final. An administrator refreshes that table snapshot from the football data provider; projections are read-only and never create ledger entries.
 
 ## Season-long competitions
 
-Season markets are configurable records with a deadline, option list, required number of selections, and points per correct selection. The initial schedule includes League Champion, Top Four, Fifth-to-Seventh, Relegation, First Manager Exit, Golden Boot, January Mover, and Champions League Final. Markets may remain in draft until their option list and rules are ready.
+The initial schedule and scoring are:
 
-Entries can be changed until the market deadline. Before lock, players can only read their own entries. Administrators maintain the current-result options used by standings projections. Final settlement will create the matching append-only ledger type and must remain idempotent.
+- League Champion: one selection, 100 points if correct.
+- Other Top Four clubs: three selections excluding the chosen champion, 50 points each.
+- Fifth-to-Seventh: three selections, 25 points each.
+- Relegated clubs: three selections, 50 points each.
+- Manager sack market: any number of managers, +10 if sacked and −5 if still employed in the final week.
+- Golden Boot: a 20-point stake paid at 20 × the published preseason odds if correct; −20 if wrong.
+- Second-half mover: chosen at the halfway point, +5 per place climbed from January 1 and −5 per place fallen.
+- Champions League Final: one single-match wager, with stake and odds confirmed later.
+
+Exact order within the Top Four, fifth-to-seventh and relegation tiers does not matter. Entries can be changed until their market deadline. Before lock, players can only read their own entries. Final settlement creates the matching append-only ledger type and must remain idempotent.
 
 ## Future extension points
 

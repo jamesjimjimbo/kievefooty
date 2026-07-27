@@ -35,7 +35,7 @@ pnpm build
 
 ## Deployment
 
-Import `jamesjimjimbo/kievefooty` into Vercel, add the Supabase public variables, and set `NEXT_PUBLIC_SITE_URL` to the production origin. The odds and Resend variables are placeholders only and are not required.
+Import `jamesjimjimbo/kievefooty` into Vercel, add the Supabase public variables, and set `NEXT_PUBLIC_SITE_URL` to the production origin. Add `FOOTBALL_DATA_API_KEY` to enable the admin’s current-table forecast refresh. The odds and Resend variables are placeholders only and are not required.
 
 ## Architecture
 

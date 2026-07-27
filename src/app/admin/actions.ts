@@ -47,17 +47,48 @@ export async function syncLockToFirstKickoff(formData:FormData){
   revalidatePath("/picks");
 }
 
-export async function setMarketCurrentResults(formData:FormData){
-  const marketId=String(formData.get("marketId")??"");
-  const optionIds=formData.getAll("optionId").map(String);
+function normalizeTeamName(name:string){
+  const aliases:Record<string,string>={
+    "AFC Bournemouth":"Bournemouth",
+    "Brighton & Hove Albion FC":"Brighton & Hove Albion",
+    "Coventry City FC":"Coventry City",
+    "Sunderland AFC":"Sunderland",
+    "Tottenham Hotspur FC":"Tottenham Hotspur",
+    "Manchester City FC":"Manchester City",
+    "Manchester United FC":"Manchester United",
+    "Newcastle United FC":"Newcastle United",
+    "Nottingham Forest FC":"Nottingham Forest",
+    "Ipswich Town FC":"Ipswich Town",
+    "Leeds United FC":"Leeds United",
+    "Hull City AFC":"Hull City",
+  };
+  return aliases[name]??name.replace(/ FC$/,"");
+}
+
+export async function refreshLeagueTable(){
   const supabase=await adminClient();
-  const {data:market,error:marketError}=await supabase.from("season_markets").select("max_selections").eq("id",marketId).single();
-  if(marketError)throw new Error(marketError.message);
-  if(optionIds.length>market.max_selections)throw new Error(`Choose no more than ${market.max_selections} current results`);
-  const {error}=await supabase.from("season_markets").update({current_option_ids:optionIds}).eq("id",marketId);
+  const apiKey=process.env.FOOTBALL_DATA_API_KEY;
+  if(!apiKey)throw new Error("Add FOOTBALL_DATA_API_KEY to enable table forecasts");
+  const response=await fetch("https://api.football-data.org/v4/competitions/PL/standings",{
+    headers:{"X-Auth-Token":apiKey},
+    cache:"no-store",
+  });
+  if(!response.ok)throw new Error(`Standings provider returned ${response.status}`);
+  const payload=await response.json() as {season?:{startDate?:string};standings?:{type:string;table:{position:number;playedGames:number;points:number;team:{name:string}}[]}[]};
+  const table=payload.standings?.find(standing=>standing.type==="TOTAL")?.table;
+  if(!table?.length)throw new Error("No Premier League table was returned");
+  const capturedAt=new Date().toISOString();
+  const {error}=await supabase.from("league_table_snapshots").insert(table.map(row=>({
+    season:payload.season?.startDate?.slice(0,4)??"2026",
+    captured_at:capturedAt,
+    provider:"football-data.org",
+    position:row.position,
+    team_name:normalizeTeamName(row.team.name),
+    played:row.playedGames,
+    points:row.points,
+  })));
   if(error)throw new Error(error.message);
   revalidatePath("/admin");
   revalidatePath("/picks");
   revalidatePath("/standings");
-  revalidatePath("/competitions");
 }

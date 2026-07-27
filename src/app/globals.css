@@ -233,7 +233,7 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
   right: 0;
   bottom: 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
   background: rgba(255, 255, 255, .94);
@@ -282,6 +282,10 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .crest-5 i { background: var(--cyan); }
 
 /* Picks */
+.picks-topline { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; padding: 0 2px; }
+.picks-topline > div { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
+.picks-topline > div span { color: var(--primary); font-size: 9px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+.picks-topline > div b { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
 .weekly-recap {
   display: grid;
   gap: 12px;
@@ -422,6 +426,7 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .market-head h2 { margin: 5px 0 5px; }
 .market-head p { margin: 0; font-size: 11px; }
 .market-kicker { display: flex; align-items: center; gap: 6px; color: var(--primary); font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: .07em; }
+.market-kicker { flex-wrap: wrap; line-height: 1.35; }
 .market-kicker i { width: 3px; height: 3px; border-radius: 50%; background: var(--coral); }
 .market-status { display: inline-flex; align-items: center; gap: 5px; padding: 6px 8px; color: var(--muted); border-radius: 99px; background: #f0eff7; font-size: 9px; font-weight: 850; white-space: nowrap; }
 .market-status.open { color: #087f72; background: var(--mint); }
@@ -443,6 +448,33 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 
 /* Rules, profile, admin */
 .grid-2 { display: grid; gap: 14px; }
+.compact-page-head { margin-bottom: 15px; }
+.compact-page-head h1 { margin-bottom: 6px; }
+.payout-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; overflow: hidden; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 17px; background: var(--line); }
+.payout-strip div { min-height: 84px; display: grid; place-content: center; gap: 4px; padding: 12px; text-align: center; background: rgba(255,255,255,.96); }
+.payout-strip b { color: var(--primary); font-size: 25px; letter-spacing: -.04em; }
+.payout-strip span { color: var(--muted); font-size: 10px; font-weight: 850; }
+.rules-layout { display: grid; gap: 14px; align-items: start; }
+.rules-accordion,.season-rule-card { padding: 0; overflow: hidden; box-shadow: none; }
+.rules-section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 14px; padding: 17px 18px; border-bottom: 1px solid var(--line); }
+.rules-section-head h2,.rules-section-head .eyebrow { margin-bottom: 0; }
+.rules-section-head span { color: var(--muted); font-size: 9px; font-weight: 800; }
+.rules-accordion details { border-bottom: 1px solid var(--line); }
+.rules-accordion details:last-child { border-bottom: 0; }
+.rules-accordion summary { min-height: 66px; display: flex; align-items: center; justify-content: space-between; gap: 13px; padding: 12px 18px; cursor: pointer; list-style: none; }
+.rules-accordion summary::-webkit-details-marker { display: none; }
+.rules-accordion summary div { display: grid; gap: 3px; }
+.rules-accordion summary b { font-size: 13px; }
+.rules-accordion summary span { color: var(--muted); font-size: 10px; }
+.rules-accordion summary svg { flex: 0 0 auto; color: var(--muted); transition: transform .18s ease; }
+.rules-accordion details[open] summary svg { transform: rotate(90deg); color: var(--primary); }
+.rules-accordion details > p { margin: -2px 42px 15px 18px; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.season-score-list { display: grid; }
+.season-score-list div { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14px; min-height: 48px; padding: 9px 18px; border-bottom: 1px solid var(--line); }
+.season-score-list span { color: var(--muted); font-size: 10px; }
+.season-score-list b { max-width: 190px; text-align: right; font-size: 10px; }
+.rules-note { margin: 15px 18px 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.season-rule-card .rules-competition-link { margin: 14px 18px 18px; }
 .rules-grid { display: grid; gap: 12px; }
 .rule-card { display: flex; gap: 14px; box-shadow: none; }
 .rule-card h2 { margin: 2px 0 6px; font-size: 17px; }
@@ -483,6 +515,11 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .mini-button.active { color: #087f72; border-color: #aeeadd; background: var(--mint); }
 .gotw-button.active { color: white; border-color: var(--primary); background: var(--primary); }
 .admin-markets { margin-top: 26px; }
+.forecast-sync { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 12px; box-shadow: none; }
+.forecast-sync p { margin: 4px 0 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.forecast-sync form { grid-column: 1 / -1; }
+.forecast-sync button { width: 100%; }
+.forecast-sync button:disabled { cursor: not-allowed; opacity: .52; }
 .admin-market-note { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .admin-market header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
 .admin-market h3,.admin-market p { margin: 0; }
@@ -509,8 +546,8 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 @media (min-width: 700px) {
   .app-shell { padding-bottom: 30px; }
   .mobile-only { display: none; }
-  .bottom-nav { position: static; max-width: 510px; padding: 0; border: 0; background: transparent; backdrop-filter: none; }
-  .topbar-inner { display: grid; grid-template-columns: 1fr 2fr 1fr; }
+  .bottom-nav { position: static; max-width: 620px; padding: 0; border: 0; background: transparent; backdrop-filter: none; }
+  .topbar-inner { display: grid; grid-template-columns: .9fr 2.5fr .9fr; }
   .top-actions { justify-content: flex-end; }
   .admin-link, .rules-link span { display: block; }
   .nav-item { min-height: 52px; flex-direction: row; gap: 7px; font-size: 11px; }
@@ -547,7 +584,12 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
   .calendar-row time { grid-column: auto; margin: 0; padding: 0; text-align: right; }
   .market-grid { grid-template-columns: 1fr 1fr; }
   .market-grid-later { grid-template-columns: repeat(3,1fr); }
+  .payout-strip { grid-template-columns: repeat(4,1fr); }
+  .rules-layout { grid-template-columns: minmax(0,1.35fr) minmax(320px,.8fr); }
   .rules-grid { grid-template-columns: 1fr 1fr; }
   .contests-card { grid-template-columns: 1fr 1fr; align-items: center; }
   .admin-summary { grid-template-columns: repeat(4, 1fr); }
+  .forecast-sync { grid-template-columns: auto 1fr auto; }
+  .forecast-sync form { grid-column: auto; }
+  .forecast-sync button { width: auto; }
 }

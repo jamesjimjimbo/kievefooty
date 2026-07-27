@@ -1,20 +1,55 @@
-import type { Metadata } from "next";
+import type {Metadata} from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { Banknote, CalendarClock, Goal, ShieldCheck, Swords, Trophy } from "lucide-react";
-import { AppShell } from "@/components/app-shell";
-import { createClient } from "@/lib/supabase/server";
+import {redirect} from "next/navigation";
+import {ChevronRight} from "lucide-react";
+import {AppShell} from "@/components/app-shell";
+import {createClient} from "@/lib/supabase/server";
 
-export const metadata:Metadata={title:"Rules & contests"};
+export const metadata:Metadata={title:"Rules"};
 export const dynamic="force-dynamic";
 
-const sections=[
-  {title:"Your weekly picks",Icon:Goal,body:"Every active Competition Week has one admin-selected Game of the Week. You also choose one other eligible fixture. Pick Home, Draw, or Away on each and split exactly 10 points between them, with at least 1 point on each."},
-  {title:"The deadline",Icon:CalendarClock,body:"Both selections lock together at the kickoff of the first eligible Premier League fixture in that Competition Week. Nothing can be edited after the deadline. Missing selections are designed to become automatic 5-and-5 favorite picks."},
-  {title:"Scoring",Icon:Banknote,body:"Correct pick: stake × decimal odds − stake. Incorrect pick: lose the stake. The weekly +10 bankroll credit lets everyone participate, but it never counts as competitive performance."},
-  {title:"Challenges",Icon:Swords,body:"Before lock, you may challenge each opponent once per season. No acceptance is required. Only the two normal weekly bets are compared. The higher net result receives +10 and the other player −10; a tie transfers nothing but still uses the challenge."},
-  {title:"Three standings",Icon:Trophy,body:"First Half and Second Half include normal weekly betting performance only. Overall includes normal weekly performance plus challenge transfers. Bankroll carries across the half-season boundary even though Second-Half performance starts at zero."},
-  {title:"Fair play",Icon:ShieldCheck,body:"Other players’ selections stay private until the common deadline. After lock, everyone’s picks, stakes, odds, and potential results become visible on the Picks page."},
+const coreRules=[
+  {
+    title:"Weekly picks",
+    summary:"Two selections, split 10 points",
+    body:"Pick Home, Draw, or Away for the Game of the Week and one other eligible fixture. Split exactly 10 points across the two selections, with at least 1 point on each.",
+  },
+  {
+    title:"Lock and visibility",
+    summary:"Both picks lock together",
+    body:"Both selections lock at the first eligible Premier League kickoff of the Competition Week. Before lock, only you and the admin can see your picks. After lock, the league can see every pick, stake, odds, and potential result.",
+  },
+  {
+    title:"Weekly scoring",
+    summary:"Wins earn net profit; misses lose the stake",
+    body:"A correct pick scores stake × decimal odds − stake. An incorrect pick loses the stake. The weekly 10-point credit funds participation but never counts toward competitive standings.",
+  },
+  {
+    title:"Challenges",
+    summary:"One head-to-head against each opponent",
+    body:"Challenge each opponent once per season before a weekly lock. The higher normal weekly betting result receives +10 and the other player −10. A tie transfers nothing but still uses the challenge.",
+  },
+  {
+    title:"Standings and bonuses",
+    summary:"First Half, Second Half, and Full Competition",
+    body:"Half tables count normal weekly results only. Full Competition also counts challenges, season-long results, Casinos, and bonuses. The separate 10% accuracy prize goes to the player with the most correct normal Game Week picks. Three correct Games of the Week in a row earns +10; the streak then resets.",
+  },
+  {
+    title:"Casino periods",
+    summary:"Variable-stake windows later in the season",
+    body:"The Holiday Casino allows bets across the winter slate. The Final Stretch Casino allows variable stakes on the two weekly selections. Casino wagers cannot exceed the available balance, and details will be posted before each window.",
+  },
+];
+
+const seasonScoring=[
+  ["League champion","100 if correct"],
+  ["Other Top Four clubs","50 each · 150 available"],
+  ["Fifth to seventh","25 each · 75 available"],
+  ["Relegated clubs","50 each · 150 available"],
+  ["Manager sack market","+10 sacked · −5 survives"],
+  ["Golden Boot","20-point bet at preseason odds"],
+  ["Second-half mover","±5 per table place"],
+  ["Champions League Final","Single-match bet · details later"],
 ];
 
 export default async function RulesPage(){
@@ -23,9 +58,27 @@ export default async function RulesPage(){
   const {data:{user}}=await supabase.auth.getUser();
   if(!user)redirect("/auth/sign-in");
   return <AppShell><main className="content content-wide rules-page">
-    <div className="page-head"><div><p className="eyebrow">How Kieve Footy works</p><h1>Rules & contests</h1><p className="subtle">The short version of what counts, what locks, and what you can win.</p></div></div>
-    <section className="rules-grid">{sections.map(({title,Icon,body})=><article className="card rule-card" key={title}><span className="icon-box"><Icon size={21}/></span><div><h2>{title}</h2><p className="subtle">{body}</p></div></article>)}</section>
-    <section className="card contests-card"><div><p className="eyebrow">Current competition</p><h2>Prize split</h2><p className="subtle">Payments are handled outside the app. The percentages are informational.</p></div><div className="prize-grid"><div><b>15%</b><span>First Half</span></div><div><b>15%</b><span>Second Half</span></div><div><b>70%</b><span>Overall</span></div></div></section>
-    <section className="card future-card"><p className="eyebrow">The long game</p><h2>Season competitions</h2><p className="subtle">League champion, Top Four, fifth-to-seventh, relegation and first manager exit are available from the Season page. Golden Boot, January mover and the Champions League Final open when their fields are confirmed.</p><Link className="secondary rules-competition-link" href="/competitions">Open season competitions</Link></section>
+    <div className="page-head compact-page-head"><div><p className="eyebrow">The useful version</p><h1>Rules</h1><p className="subtle">Everything that changes your score, without the legal-document energy.</p></div></div>
+
+    <section className="payout-strip">
+      <div><b>15%</b><span>First Half</span></div>
+      <div><b>10%</b><span>Most accurate picker</span></div>
+      <div><b>15%</b><span>Second Half</span></div>
+      <div><b>60%</b><span>Full Competition</span></div>
+    </section>
+
+    <div className="rules-layout">
+      <section className="rules-accordion card">
+        <div className="rules-section-head"><div><p className="eyebrow">Game rules</p><h2>How it works</h2></div><span>Tap a row for detail</span></div>
+        {coreRules.map((rule,index)=><details key={rule.title} open={index===0}><summary><div><b>{rule.title}</b><span>{rule.summary}</span></div><ChevronRight size={17}/></summary><p>{rule.body}</p></details>)}
+      </section>
+
+      <aside className="season-rule-card card">
+        <div className="rules-section-head"><div><p className="eyebrow">475 points available</p><h2>Season scoring</h2></div></div>
+        <div className="season-score-list">{seasonScoring.map(([label,value])=><div key={label}><span>{label}</span><b>{value}</b></div>)}</div>
+        <p className="rules-note">For the league-position markets, exact order within Top Four, fifth-to-seventh, and relegation does not matter.</p>
+        <Link className="primary rules-competition-link" href="/competitions">Make season picks</Link>
+      </aside>
+    </div>
   </main></AppShell>;
 }

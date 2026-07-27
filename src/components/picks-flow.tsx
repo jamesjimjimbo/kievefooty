@@ -45,7 +45,7 @@ function LivePicks({data}:{data:PicksPageData}){
   const submit=()=>startTransition(async()=>{if(!gotwPick||!otherPick||!other)return;const result=await saveWeeklyPicks({weekId:data.week.id,gotwFixtureId:gotw.id,gotwOutcome:gotwPick,gotwStake,ownFixtureId:other.id,ownOutcome:otherPick,ownStake:otherStake});setMessage(result.error??"Picks saved. You can edit until the deadline.")});
   const challenge=()=>startTransition(async()=>{if(!opponent)return;const result=await createChallenge({weekId:data.week.id,opponentId:opponent});setMessage(result.error??"Challenge sent. No acceptance needed.")});
   return <AppShell><main className="content content-wide picks-page">
-    <div className="page-head"><div><p className="eyebrow">Competition week {data.week.number}</p><h1>Your picks</h1><p className="subtle">{data.week.label}</p></div><span className={`pill ${data.locked?"":"live"}`}><Clock3 size={13}/>{data.locked?"Locked":"Open"}</span></div>
+    <div className="picks-topline"><div><span>Competition week {data.week.number}</span><b>{data.week.label}</b></div><span className={`pill ${data.locked?"":"live"}`}><Clock3 size={13}/>{data.locked?"Locked":"Open"}</span></div>
     {data.previousWeek&&<WeeklyRecap recap={data.previousWeek}/>}
     <div className="picks-layout"><div>
       <section className="card hero-card compact-hero"><div><p className="eyebrow">Weekly deadline</p><h2>Lock in by {data.week.lockLabel}</h2><p>The first eligible kickoff locks both picks.</p></div><div className="stat-row"><div className="stat"><span className="stat-label">Bankroll</span><span className="stat-value">{data.bankroll}</span></div><div className="stat"><span className="stat-label">Your rank</span><span className="stat-value">#{data.rank}</span></div></div></section>
