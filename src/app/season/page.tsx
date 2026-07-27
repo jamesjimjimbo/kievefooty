@@ -1,7 +1,7 @@
 import type {Metadata} from "next";
 import Link from "next/link";
 import {redirect} from "next/navigation";
-import {CalendarDays,Check,ChevronRight,Circle,Globe2,Sparkles,Trophy} from "lucide-react";
+import {ChevronRight,Globe2,Trophy} from "lucide-react";
 import {AppShell} from "@/components/app-shell";
 import {createClient} from "@/lib/supabase/server";
 
@@ -19,6 +19,51 @@ const shortDate=(value:string)=>new Intl.DateTimeFormat("en-US",{month:"short",d
 const fullDate=(value:string)=>new Intl.DateTimeFormat("en-US",{weekday:"short",month:"short",day:"numeric"}).format(date(value));
 const lockLabel=(value:string)=>new Intl.DateTimeFormat("en-US",{weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(value));
 
+type CalendarKind="regular"|"break"|"casino"|"finale";
+type CalendarEvent={kind:CalendarKind;label:string;detail:string};
+
+const roundDates=[
+  "2026-08-21","2026-08-28","2026-09-04","2026-09-12","2026-09-18",
+  "2026-10-10","2026-10-17","2026-10-24","2026-10-31",
+  "2026-11-07","2026-11-21","2026-11-28",
+  "2026-12-02","2026-12-05","2026-12-12","2026-12-19","2026-12-26","2026-12-30",
+  "2027-01-02","2027-01-06","2027-01-16","2027-01-23","2027-01-30",
+  "2027-02-06","2027-02-10","2027-02-20","2027-02-27",
+  "2027-03-03","2027-03-13","2027-03-20",
+  "2027-04-10","2027-04-17","2027-04-24",
+  "2027-05-01","2027-05-08","2027-05-15","2027-05-23","2027-05-30",
+];
+const calendarEvents=new Map<string,CalendarEvent>(
+  roundDates.map((day,index)=>[day,{kind:"regular",label:`Competition week ${index+1}`,detail:"Regular picks"}]),
+);
+for(const day of ["2026-12-26","2026-12-30","2027-01-02","2027-01-06"]){
+  calendarEvents.set(day,{kind:"casino",label:"Holiday Casino",detail:"Winter slate"});
+}
+for(const day of ["2027-05-01","2027-05-08","2027-05-15","2027-05-23"]){
+  calendarEvents.set(day,{kind:"casino",label:"Final Stretch Casino",detail:"Variable-stake picks"});
+}
+calendarEvents.set("2027-05-30",{kind:"finale",label:"Premier League Final Day",detail:"All matches kick off together"});
+calendarEvents.set("2027-06-05",{kind:"finale",label:"Champions League Final",detail:"Madrid"});
+
+function addDateRange(start:string,end:string,label:string){
+  const cursor=new Date(`${start}T12:00:00Z`);
+  const final=new Date(`${end}T12:00:00Z`);
+  while(cursor<=final){
+    const key=cursor.toISOString().slice(0,10);
+    calendarEvents.set(key,{kind:"break",label,detail:"No regular picks"});
+    cursor.setUTCDate(cursor.getUTCDate()+1);
+  }
+}
+addDateRange("2026-09-24","2026-10-06","International break");
+addDateRange("2026-11-12","2026-11-17","International break");
+addDateRange("2027-03-25","2027-03-30","International break");
+
+const calendarMonths=Array.from({length:11},(_,index)=>{
+  const monthIndex=7+index;
+  return {year:2026+Math.floor(monthIndex/12),month:monthIndex%12};
+});
+const dateKey=(year:number,month:number,day:number)=>`${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+
 export default async function Page(){
   const supabase=await createClient();
   if(!supabase)redirect("/auth/sign-in");
@@ -33,11 +78,6 @@ export default async function Page(){
   const active=weeks.filter(week=>week.is_active_betting_week&&!week.is_casino);
   const completed=active.filter(week=>week.status==="settled").length;
   const firstRemaining=active.filter(week=>week.half==="first"&&week.status!=="settled").length;
-  const monthGroups=new Map<string,WeekRow[]>();
-  for(const week of weeks){
-    const key=new Intl.DateTimeFormat("en-US",{month:"long",year:"numeric"}).format(date(week.start_date));
-    monthGroups.set(key,[...(monthGroups.get(key)??[]),week]);
-  }
   return <AppShell><main className="content content-wide season-page">
     <div className="page-head"><div><p className="eyebrow">2026 / 27 roadmap</p><h1>Season</h1><p className="subtle">See what needs a pick now, what comes next, and when the competition pauses.</p></div></div>
 
@@ -52,20 +92,34 @@ export default async function Page(){
       <Link href="/competitions"><span>Season-long bets</span><b>Make your predictions</b><ChevronRight size={17}/></Link>
     </section>
 
-    <div className="calendar-heading"><div><p className="eyebrow">Full schedule</p><h2>Competition calendar</h2></div><div className="calendar-key"><span><i className="done"/>Done</span><span><i className="current"/>Now</span><span><i/>Later</span><span><i className="break"/>Break</span></div></div>
-    <section className="calendar-list card">{[...monthGroups].map(([month,items])=><div className="calendar-month-row" key={month}><h3>{month}</h3><div>{items.map(week=><CalendarRow key={week.id} week={week}/>)}</div></div>)}</section>
+    <div className="calendar-heading"><div><p className="eyebrow">August to June</p><h2>Competition calendar</h2><p>Regular rounds, pauses, Casino windows, and the two season finales at a glance.</p></div></div>
+    <div className="calendar-key" aria-label="Calendar legend"><span><i className="regular"/>Regular picks</span><span><i className="break"/>International break</span><span><i className="casino"/>Casino</span><span><i className="finale"/>Finale</span></div>
+    <section className="month-calendar-grid">{calendarMonths.map(({year,month})=><CalendarMonth key={`${year}-${month}`} year={year} month={month}/>)}</section>
+    <p className="calendar-source-note">Premier League match-round dates are shown as originally scheduled and may move for broadcast or cup commitments.</p>
 
     <Link href="/competitions" className="card competitions-link"><span className="icon-box"><Trophy size={20}/></span><div><p className="eyebrow">The long game</p><h2>Season competitions</h2><p>Champion, Top Four, relegation, manager exit and more.</p></div><ChevronRight size={20}/></Link>
   </main></AppShell>;
 }
 
-function CalendarRow({week}:{week:WeekRow}){
-  const state=week.status==="settled"?"done":week.status==="open"||week.status==="locked"?"current":week.status==="break"?"break":"upcoming";
-  const Icon=state==="done"?Check:state==="break"?Globe2:week.is_casino?Sparkles:state==="current"?CalendarDays:Circle;
-  return <article className={`calendar-row ${state}`}>
-    <span className="calendar-icon"><Icon size={15}/></span>
-    <div className="calendar-row-title"><b>{week.label}</b><small>{week.notes??(week.is_active_betting_week?"Normal picks week":"No picks")}</small></div>
-    <span className="calendar-half">{week.half?`${week.half==="first"?"First":"Second"} Half`:week.is_casino?"Special":"Break"}</span>
-    <time>{shortDate(week.start_date)}{week.end_date!==week.start_date?` – ${shortDate(week.end_date)}`:""}</time>
+function CalendarMonth({year,month}:{year:number;month:number}){
+  const firstDay=new Date(Date.UTC(year,month,1)).getUTCDay();
+  const daysInMonth=new Date(Date.UTC(year,month+1,0)).getUTCDate();
+  const monthName=new Intl.DateTimeFormat("en-US",{month:"long",year:"numeric",timeZone:"UTC"}).format(new Date(Date.UTC(year,month,1)));
+  const cells=Array.from({length:42},(_,index)=>{
+    const day=index-firstDay+1;
+    if(day<1||day>daysInMonth)return <span className="calendar-day outside" aria-hidden="true" key={index}/>;
+    const event=calendarEvents.get(dateKey(year,month,day));
+    return <span className={`calendar-day ${event?.kind??""}`} title={event?`${event.label} — ${event.detail}`:undefined} aria-label={event?`${monthName} ${day}: ${event.label}, ${event.detail}`:`${monthName} ${day}`} key={index}>
+      <b>{day}</b>{event&&<i/>}
+    </span>;
+  });
+  const monthEvents=Array.from({length:daysInMonth},(_,index)=>calendarEvents.get(dateKey(year,month,index+1))).filter(Boolean) as CalendarEvent[];
+  const regularCount=monthEvents.filter(event=>event.kind==="regular").length;
+  const specialEvents=Array.from(new Map(monthEvents.filter(event=>event.kind!=="regular").map(event=>[event.label,event])).values());
+  return <article className="month-calendar card">
+    <header><h3>{monthName}</h3>{regularCount>0&&<span>{regularCount} regular week{regularCount===1?"":"s"}</span>}</header>
+    <div className="weekday-row" aria-hidden="true">{["S","M","T","W","T","F","S"].map((day,index)=><span key={`${day}-${index}`}>{day}</span>)}</div>
+    <div className="calendar-days">{cells}</div>
+    <footer>{specialEvents.length?specialEvents.map(event=><div className="month-special" key={event.label}><i className={event.kind}/><span><b>{event.label}</b><small>{event.detail}</small></span></div>):<span className="calendar-quiet">Regular competition month</span>}</footer>
   </article>;
 }
