@@ -369,6 +369,22 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .projection-toggle.large { font-size: 11px; }
 .projection-toggle.large > div { display: grid; }
 .projection-toggle.large small { color: var(--muted); font-weight: 650; }
+.standings-grid { display: grid; gap: 14px; }
+.standings-card { overflow: hidden; padding: 0; box-shadow: none; }
+.standings-card + .standings-card { margin-top: 0; }
+.standing-card-head { min-height: 103px; padding: 17px 18px 14px; border-bottom: 1px solid var(--line); background: linear-gradient(135deg,#fff,#f8f7ff); }
+.standing-card-head h2 { margin: 0 0 5px; }
+.standing-card-head p:last-child { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.45; }
+.competition-table .standing-row { grid-template-columns: 27px 1fr 62px; min-height: 58px; padding: 0 13px; }
+.full-standing-row { grid-template-columns: 27px 1fr 55px 61px !important; }
+.official-score { color: var(--muted); text-align: right; font-size: 11px; font-weight: 850; }
+.projected-score { color: var(--primary); }
+.standing-column-labels { display: grid; grid-template-columns: 1fr 55px 61px; padding: 8px 13px 7px; color: var(--muted); border-bottom: 1px solid var(--line); background: #fafaff; font-size: 8px; font-weight: 850; text-align: right; text-transform: uppercase; letter-spacing: .06em; }
+.standing-column-labels span:first-child { grid-column: 2; }
+.accuracy-score { display: grid; text-align: right; line-height: 1; }
+.accuracy-score b { font-size: 14px; }
+.accuracy-score small { margin-top: 3px; color: var(--muted); font-size: 8px; font-weight: 750; }
+.standings-footnote { margin: 14px 2px 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
 
 /* Season */
 .season-now { display: grid; overflow: hidden; margin-bottom: 13px; border-radius: 20px; color: white; background: linear-gradient(125deg,#2c2194,var(--primary) 55%,#7054eb); box-shadow: 0 18px 45px rgba(57,38,170,.2); }
@@ -570,6 +586,7 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
   .nav-item.active::after { content: ""; position: absolute; left: 26%; right: 26%; bottom: -9px; height: 2px; border-radius: 99px; background: linear-gradient(90deg, var(--primary), var(--cyan)); }
   .content { padding: 34px 20px 58px; }
   .grid-2, .admin-grid { grid-template-columns: 1fr 1fr; }
+  .standings-grid { grid-template-columns: 1fr 1fr; align-items: start; }
   .weekly-recap { grid-template-columns: .65fr 1fr 1px 1.15fr; align-items: center; padding: 13px 16px; }
   .recap-intro { display: grid; gap: 4px; }
   .recap-divider { width: 1px; height: 35px; }

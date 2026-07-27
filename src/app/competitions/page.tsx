@@ -38,7 +38,7 @@ export default async function CompetitionsPage(){
   const later=markets.filter(market=>market.status!=="open");
   return <AppShell><main className="content content-wide competitions-page">
     <div className="page-head"><div><p className="eyebrow">The long game</p><h1>Season competitions</h1><p className="subtle">Make the big calls now. Position projections follow the latest saved Premier League table.</p></div><span className="pill live"><Sparkles size={13}/>{open.length} open</span></div>
-    <section className="card competitions-explainer"><span className="icon-box"><Trophy size={20}/></span><div><b>How projections work</b><p>Open the Full standings and turn on season bets to see the table as if today&apos;s results were final. Projections never change your official score.</p></div></section>
+    <section className="card competitions-explainer"><span className="icon-box"><Trophy size={20}/></span><div><b>How projections work</b><p>The Full Competition table shows official points beside the score you would have if today&apos;s results became final. Projections never change your official score.</p></div></section>
     <div className="market-grid">{open.map(market=><SeasonMarketCard key={market.id} market={market}/>)}</div>
     {later.length>0&&<><div className="section-label"><div><p className="eyebrow">On the schedule</p><h2>Opening later</h2></div></div><div className="market-grid market-grid-later">{later.map(market=><SeasonMarketCard key={market.id} market={market}/>)}</div></>}
   </main></AppShell>;
