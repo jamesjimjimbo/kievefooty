@@ -10,7 +10,12 @@ type ExistingPick={fixture_id:string;kind:"gotw"|"own";selected_outcome:Outcome;
 export type PicksPageData={
   week:{id:string;number:number;label:string;lockAt:string;lockLabel:string};bankroll:number;rank:number;fixtures:Fixture[];
   existing:{gotw?:ExistingPick;own?:ExistingPick;source?:string};opponents:{id:string;display_name:string}[];challengeTokens:number;locked:boolean;
-  standings:{id:string;name:string;score:number;me:boolean}[];
+  standings:{
+    first:{id:string;name:string;score:number;me:boolean}[];
+    second:{id:string;name:string;score:number;me:boolean}[];
+    overall:{id:string;name:string;score:number;me:boolean}[];
+    projected:{id:string;name:string;score:number;me:boolean;seasonProjection:number}[];
+  };
   leaguePicks:{userId:string;name:string;source:"manual"|"auto";picks:{fixtureId:string;fixture:string;kind:"gotw"|"own";outcome:Outcome;stake:number;odds:number;isCorrect:boolean|null}[]}[];
   previousWeek?:{label:string;winner:{id:string;name:string;score:number};loser:{id:string;name:string;score:number}};
 };
@@ -61,8 +66,16 @@ function LivePicks({data}:{data:PicksPageData}){
 }
 
 function StandingsSnapshot({rows}:{rows:PicksPageData["standings"]}){
-  const top=[...rows].sort((a,b)=>b.score-a.score).slice(0,8);
-  return <section><div className="section-label"><h2>League table</h2><a className="text-link" href="/standings">Full standings →</a></div><div className="card table compact-table">{top.map((row,index)=><div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><span className="player"><ClubCrest seed={row.id} label={row.name} size="sm"/><span>{row.name}{row.me&&<small className="you-label">You</small>}</span></span><span className="points">{row.score>0?"+":""}{row.score}</span></div>)}</div></section>;
+  const [tab,setTab]=useState<"first"|"second"|"overall">("overall");
+  const [project,setProject]=useState(false);
+  const selected=tab==="overall"&&project?rows.projected:rows[tab];
+  const top=[...selected].sort((a,b)=>b.score-a.score).slice(0,8);
+  return <section className="home-standings"><div className="section-label"><div><p className="eyebrow">At a glance</p><h2>League table</h2></div><a className="text-link" href="/standings">Full table →</a></div>
+    <div className="home-standing-controls"><div className="mini-segments" aria-label="Standings period">{([["first","First"],["second","Second"],["overall","Full"]] as const).map(([value,label])=><button type="button" key={value} onClick={()=>{setTab(value);if(value!=="overall")setProject(false)}} className={tab===value?"active":""}>{label}</button>)}</div>
+    {tab==="overall"&&<label className="projection-toggle"><input type="checkbox" checked={project} onChange={event=>setProject(event.target.checked)}/><span/><b>Include season bets</b></label>}</div>
+    {tab==="overall"&&project&&<p className="projection-note">Assumes today&apos;s league and market results are final.</p>}
+    <div className="card table compact-table">{top.map((row,index)=><div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><span className="player"><ClubCrest seed={row.id} label={row.name} size="sm"/><span>{row.name}{row.me&&<small className="you-label">You</small>}</span></span><span className="points">{row.score>0?"+":""}{row.score}</span></div>)}</div>
+  </section>;
 }
 
 function WeeklyRecap({recap}:{recap:NonNullable<PicksPageData["previousWeek"]>}){

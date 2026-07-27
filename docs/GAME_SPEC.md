@@ -22,8 +22,16 @@ A challenge is directional, requires no acceptance, and must be made before lock
 
 ## Standings
 
-First Half and Second Half include only normal weekly bet wins and losses assigned to that half. Overall currently includes normal weekly betting plus challenge transfers. Weekly credits are excluded everywhere. Prize shares are informational: 15% First Half, 15% Second Half and 70% Overall.
+First Half and Second Half include only normal weekly bet wins and losses assigned to that half. Full Competition includes normal weekly betting, challenge transfers, and settled season-long competition results. Weekly credits are excluded everywhere. Prize shares are informational: 15% First Half, 15% Second Half and 70% Full Competition.
+
+The Full Competition table has an optional projection mode. It adds the points a player would receive if each administrator-maintained current season result became final. These projected points are read-only and never create ledger entries.
+
+## Season-long competitions
+
+Season markets are configurable records with a deadline, option list, required number of selections, and points per correct selection. The initial schedule includes League Champion, Top Four, Fifth-to-Seventh, Relegation, First Manager Exit, Golden Boot, January Mover, and Champions League Final. Markets may remain in draft until their option list and rules are ready.
+
+Entries can be changed until the market deadline. Before lock, players can only read their own entries. Administrators maintain the current-result options used by standings projections. Final settlement will create the matching append-only ledger type and must remain idempotent.
 
 ## Future extension points
 
-Ledger types and week flags reserve space for Holiday/Final Casinos, streak bonuses, season predictions, manager markets, Golden Boot, January mover and the Champions League Final. `OddsProvider` isolates future fixture/odds ingestion. Email preferences reserve new-week, reminder, challenge and results events without sending mail in v1.
+Ledger types and week flags reserve space for Holiday/Final Casinos and streak bonuses. `OddsProvider` isolates future fixture/odds ingestion. Email preferences reserve new-week, reminder, challenge and results events without sending mail in v1.

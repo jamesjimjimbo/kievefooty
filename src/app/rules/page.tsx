@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Banknote, CalendarClock, Goal, ShieldCheck, Swords, Trophy } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
@@ -25,6 +26,6 @@ export default async function RulesPage(){
     <div className="page-head"><div><p className="eyebrow">How Kieve Footy works</p><h1>Rules & contests</h1><p className="subtle">The short version of what counts, what locks, and what you can win.</p></div></div>
     <section className="rules-grid">{sections.map(({title,Icon,body})=><article className="card rule-card" key={title}><span className="icon-box"><Icon size={21}/></span><div><h2>{title}</h2><p className="subtle">{body}</p></div></article>)}</section>
     <section className="card contests-card"><div><p className="eyebrow">Current competition</p><h2>Prize split</h2><p className="subtle">Payments are handled outside the app. The percentages are informational.</p></div><div className="prize-grid"><div><b>15%</b><span>First Half</span></div><div><b>15%</b><span>Second Half</span></div><div><b>70%</b><span>Overall</span></div></div></section>
-    <section className="card future-card"><p className="eyebrow">Not live yet</p><h2>Season-long contests</h2><p className="subtle">Holiday and final-stretch Casinos, league finishing-position markets, manager sack, Golden Boot, January mover, Champions League Final, and streak bonuses are planned extensions. They will not affect scores until their rules are agreed and they are visibly opened in the app.</p></section>
+    <section className="card future-card"><p className="eyebrow">The long game</p><h2>Season competitions</h2><p className="subtle">League champion, Top Four, fifth-to-seventh, relegation and first manager exit are available from the Season page. Golden Boot, January mover and the Champions League Final open when their fields are confirmed.</p><Link className="secondary rules-competition-link" href="/competitions">Open season competitions</Link></section>
   </main></AppShell>;
 }

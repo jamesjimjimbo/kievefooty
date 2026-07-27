@@ -46,3 +46,18 @@ export async function syncLockToFirstKickoff(formData:FormData){
   revalidatePath("/admin");
   revalidatePath("/picks");
 }
+
+export async function setMarketCurrentResults(formData:FormData){
+  const marketId=String(formData.get("marketId")??"");
+  const optionIds=formData.getAll("optionId").map(String);
+  const supabase=await adminClient();
+  const {data:market,error:marketError}=await supabase.from("season_markets").select("max_selections").eq("id",marketId).single();
+  if(marketError)throw new Error(marketError.message);
+  if(optionIds.length>market.max_selections)throw new Error(`Choose no more than ${market.max_selections} current results`);
+  const {error}=await supabase.from("season_markets").update({current_option_ids:optionIds}).eq("id",marketId);
+  if(error)throw new Error(error.message);
+  revalidatePath("/admin");
+  revalidatePath("/picks");
+  revalidatePath("/standings");
+  revalidatePath("/competitions");
+}
