@@ -36,27 +36,26 @@ const roundDates=[
 const calendarEvents=new Map<string,CalendarEvent>(
   roundDates.map((day,index)=>[day,{kind:"regular",label:`Competition week ${index+1}`,detail:"Regular picks"}]),
 );
-for(const day of ["2026-12-26","2026-12-30","2027-01-02","2027-01-06"]){
-  calendarEvents.set(day,{kind:"casino",label:"Holiday Casino",detail:"Winter slate"});
-}
-for(const day of ["2027-05-01","2027-05-08","2027-05-15","2027-05-23"]){
-  calendarEvents.set(day,{kind:"casino",label:"Final Stretch Casino",detail:"Variable-stake picks"});
-}
-calendarEvents.set("2027-05-30",{kind:"finale",label:"Premier League Final Day",detail:"All matches kick off together"});
-calendarEvents.set("2027-06-05",{kind:"finale",label:"Champions League Final",detail:"Madrid"});
 
-function addDateRange(start:string,end:string,label:string){
+function addDateRange(start:string,end:string,event:CalendarEvent){
   const cursor=new Date(`${start}T12:00:00Z`);
   const final=new Date(`${end}T12:00:00Z`);
   while(cursor<=final){
     const key=cursor.toISOString().slice(0,10);
-    calendarEvents.set(key,{kind:"break",label,detail:"No regular picks"});
+    calendarEvents.set(key,event);
     cursor.setUTCDate(cursor.getUTCDate()+1);
   }
 }
-addDateRange("2026-09-24","2026-10-06","International break");
-addDateRange("2026-11-12","2026-11-17","International break");
-addDateRange("2027-03-25","2027-03-30","International break");
+addDateRange("2026-09-24","2026-10-06",{kind:"break",label:"International break",detail:"No regular picks"});
+addDateRange("2026-11-12","2026-11-17",{kind:"break",label:"International break",detail:"No regular picks"});
+addDateRange("2027-03-25","2027-03-30",{kind:"break",label:"International break",detail:"No regular picks"});
+addDateRange("2026-12-21","2027-01-02",{kind:"casino",label:"Festive Fixture Casino",detail:"December 21 – January 2"});
+addDateRange("2027-05-01","2027-05-30",{kind:"casino",label:"Final Stretch Casino",detail:"May 1 through the final match round"});
+calendarEvents.set("2027-05-30",{kind:"finale",label:"Premier League Final Day",detail:"Final Stretch Casino finale"});
+calendarEvents.set("2027-06-05",{kind:"finale",label:"Champions League Final",detail:"Madrid"});
+
+const regularWeekCount=roundDates.filter(day=>calendarEvents.get(day)?.kind==="regular").length;
+const casinoRoundCount=roundDates.length-regularWeekCount;
 
 const calendarMonths=Array.from({length:11},(_,index)=>{
   const monthIndex=7+index;
@@ -92,7 +91,7 @@ export default async function Page(){
       <Link href="/competitions"><span>Season-long bets</span><b>Make your predictions</b><ChevronRight size={17}/></Link>
     </section>
 
-    <div className="calendar-heading"><div><p className="eyebrow">August to June</p><h2>Competition calendar</h2><p>Regular rounds, pauses, Casino windows, and the two season finales at a glance.</p></div></div>
+    <div className="calendar-heading"><div><p className="eyebrow">{regularWeekCount} regular weeks · {casinoRoundCount} Casino rounds</p><h2>Competition calendar</h2><p>Regular rounds, pauses, Casino windows, and the two season finales at a glance.</p></div></div>
     <div className="calendar-key" aria-label="Calendar legend"><span><i className="regular"/>Regular picks</span><span><i className="break"/>International break</span><span><i className="casino"/>Casino</span><span><i className="finale"/>Finale</span></div>
     <section className="month-calendar-grid">{calendarMonths.map(({year,month})=><CalendarMonth key={`${year}-${month}`} year={year} month={month}/>)}</section>
     <p className="calendar-source-note">Premier League match-round dates are shown as originally scheduled and may move for broadcast or cup commitments.</p>
