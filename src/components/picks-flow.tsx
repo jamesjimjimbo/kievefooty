@@ -3,6 +3,7 @@ import { useState,useTransition } from "react";
 import { CheckCircle2,Clock3,ShieldQuestion } from "lucide-react";
 import type { Fixture,Outcome } from "@/lib/demo-data";
 import { AppShell } from "@/components/app-shell";
+import { ClubCrest } from "@/components/club-crest";
 import { createChallenge,saveWeeklyPicks } from "@/app/picks/actions";
 
 type ExistingPick={fixture_id:string;kind:"gotw"|"own";selected_outcome:Outcome;stake:number};
@@ -11,12 +12,13 @@ export type PicksPageData={
   existing:{gotw?:ExistingPick;own?:ExistingPick;source?:string};opponents:{id:string;display_name:string}[];challengeTokens:number;locked:boolean;
   standings:{id:string;name:string;score:number;me:boolean}[];
   leaguePicks:{userId:string;name:string;source:"manual"|"auto";picks:{fixtureId:string;fixture:string;kind:"gotw"|"own";outcome:Outcome;stake:number;odds:number;isCorrect:boolean|null}[]}[];
+  previousWeek?:{label:string;winner:{id:string;name:string;score:number};loser:{id:string;name:string;score:number}};
 };
 
 function FixtureCard({fixture,selection,onSelect,stake,setStake,label,disabled}:{fixture:Fixture;selection?:Outcome;onSelect:(o:Outcome)=>void;stake:number;setStake:(n:number)=>void;label?:string;disabled?:boolean}) {
   return <article className="card"><div className="fixture-head"><div><div className="teams">{fixture.home} <span className="subtle">vs</span> {fixture.away}</div><div className="kickoff">{fixture.kickoff}</div></div>{label&&<span className="pill">{label}</span>}</div>
     <div className="odds">{(["home","draw","away"] as Outcome[]).map(o=><button disabled={disabled} type="button" key={o} onClick={()=>onSelect(o)} className={`odd ${selection===o?"selected":""}`} aria-pressed={selection===o}><small>{o==="home"?fixture.home:o==="away"?fixture.away:"Draw"}</small>{fixture.odds[o].toFixed(2)}</button>)}</div>
-    {selection&&<div className="stake-wrap"><div><b>Stake</b><div className="kickoff">From this week&apos;s 10</div></div><div className="stepper"><button disabled={disabled} type="button" onClick={()=>setStake(Math.max(1,stake-1))}>−</button><span>{stake}</span><button disabled={disabled} type="button" onClick={()=>setStake(Math.min(9,stake+1))}>+</button></div></div>}
+    {selection&&<div className="stake-wrap"><div><b>Stake</b><div className="kickoff">Adjust your split</div></div><div className="stepper"><button disabled={disabled} type="button" onClick={()=>setStake(Math.max(1,stake-1))} aria-label="Reduce stake">−</button><span>{stake}</span><button disabled={disabled} type="button" onClick={()=>setStake(Math.min(9,stake+1))} aria-label="Increase stake">+</button></div></div>}
   </article>;
 }
 
@@ -39,15 +41,16 @@ function LivePicks({data}:{data:PicksPageData}){
   const challenge=()=>startTransition(async()=>{if(!opponent)return;const result=await createChallenge({weekId:data.week.id,opponentId:opponent});setMessage(result.error??"Challenge sent. No acceptance needed.")});
   return <AppShell><main className="content content-wide picks-page">
     <div className="page-head"><div><p className="eyebrow">Competition week {data.week.number}</p><h1>Your picks</h1><p className="subtle">{data.week.label}</p></div><span className={`pill ${data.locked?"":"live"}`}><Clock3 size={13}/>{data.locked?"Locked":"Open"}</span></div>
+    {data.previousWeek&&<WeeklyRecap recap={data.previousWeek}/>}
     <div className="picks-layout"><div>
-      <section className="card hero-card compact-hero"><div><p className="eyebrow" style={{color:"#cde6dc"}}>Weekly deadline</p><h2 style={{marginBottom:6}}>Lock in by {data.week.lockLabel}</h2><p style={{opacity:.72,marginBottom:0}}>The first eligible kickoff locks both picks.</p></div><div className="stat-row"><div className="stat"><span className="stat-label">Bankroll</span><span className="stat-value">{data.bankroll}</span></div><div className="stat"><span className="stat-label">Allocation</span><span className="stat-value">10</span></div><div className="stat"><span className="stat-label">Your rank</span><span className="stat-value">{data.rank}</span></div></div></section>
+      <section className="card hero-card compact-hero"><div><p className="eyebrow">Weekly deadline</p><h2>Lock in by {data.week.lockLabel}</h2><p>The first eligible kickoff locks both picks.</p></div><div className="stat-row"><div className="stat"><span className="stat-label">Bankroll</span><span className="stat-value">{data.bankroll}</span></div><div className="stat"><span className="stat-label">Your rank</span><span className="stat-value">#{data.rank}</span></div></div></section>
       <div className="section-label"><div><p className="eyebrow">Required</p><h2>Game of the Week</h2></div><ShieldQuestion size={21}/></div>
       <FixtureCard fixture={gotw} selection={gotwPick} onSelect={o=>{setMessage("");setGotwPick(o)}} stake={gotwStake} setStake={adjustGotw} label="GOTW" disabled={data.locked}/>
       <div className="section-label"><div><p className="eyebrow">Your choice</p><h2>Choose one other match</h2></div></div>
       <div className="card fixture-select"><label className="field" style={{margin:0}}>Fixture<select disabled={data.locked} value={otherId} onChange={e=>{setOtherId(e.target.value);setOtherPick(undefined);setMessage("")}}>{others.map(f=><option value={f.id} key={f.id}>{f.home} vs {f.away}</option>)}</select></label></div>
       {other&&<FixtureCard fixture={other} selection={otherPick} onSelect={o=>{setMessage("");setOtherPick(o)}} stake={otherStake} setStake={adjustOther} disabled={data.locked}/>}
       {message&&<div className={message.toLowerCase().includes("error")?"notice":"saved"}><CheckCircle2 size={20}/>{message}</div>}
-      <div className="allocation"><div className="allocation-summary"><div className="allocation-row"><b>{gotwStake} + {otherStake} = {total} allocated</b><span>{Math.max(0,10-total)} remaining</span></div><div className="progress"><div style={{width:`${Math.min(100,total*10)}%`}}/></div></div><button className="primary" disabled={!valid||pending} onClick={submit}>{pending?"Saving…":data.locked?"Picks locked":"Save picks"}</button></div>
+      <div className="save-picks"><p>Your split stays balanced automatically. Edit any pick until the deadline.</p><button className="primary" disabled={!valid||pending} onClick={submit}>{pending?"Saving…":data.locked?"Picks locked":"Save picks"}</button></div>
       {data.locked&&<LockedLeaguePicks entries={data.leaguePicks}/>}
     </div><aside className="picks-sidebar">
       <StandingsSnapshot rows={data.standings}/>
@@ -59,7 +62,16 @@ function LivePicks({data}:{data:PicksPageData}){
 
 function StandingsSnapshot({rows}:{rows:PicksPageData["standings"]}){
   const top=[...rows].sort((a,b)=>b.score-a.score).slice(0,8);
-  return <section><div className="section-label"><h2>League table</h2><a className="text-link" href="/standings">Full standings →</a></div><div className="card table compact-table">{top.map((row,index)=><div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><span className="player">{row.name}{row.me&&<small>You</small>}</span><span className="points">{row.score>0?"+":""}{row.score}</span></div>)}</div></section>;
+  return <section><div className="section-label"><h2>League table</h2><a className="text-link" href="/standings">Full standings →</a></div><div className="card table compact-table">{top.map((row,index)=><div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><span className="player"><ClubCrest seed={row.id} label={row.name} size="sm"/><span>{row.name}{row.me&&<small className="you-label">You</small>}</span></span><span className="points">{row.score>0?"+":""}{row.score}</span></div>)}</div></section>;
+}
+
+function WeeklyRecap({recap}:{recap:NonNullable<PicksPageData["previousWeek"]>}){
+  return <section className="weekly-recap">
+    <div className="recap-intro"><span>Glory &amp; grief</span><b>{recap.label}</b></div>
+    <div className="recap-player winner"><ClubCrest seed={recap.winner.id} label={recap.winner.name}/><div><small>Last week&apos;s winner</small><b>{recap.winner.name}</b></div><strong>{recap.winner.score>0?"+":""}{recap.winner.score}</strong></div>
+    <div className="recap-divider"/>
+    <div className="recap-player loser"><ClubCrest seed={recap.loser.id} label={recap.loser.name}/><div><small>Form guide enthusiast</small><b>{recap.loser.name}</b></div><span>The model remains confident.</span></div>
+  </section>;
 }
 
 function LockedLeaguePicks({entries}:{entries:PicksPageData["leaguePicks"]}){

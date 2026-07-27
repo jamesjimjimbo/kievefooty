@@ -8,7 +8,13 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Kieve Footy",
     description: "Pick smart. Back your mates. Win the week.",
-    images: ["/og.jpg"],
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "Kieve Footy" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Kieve Footy",
+    description: "Pick smart. Back your mates. Win the week.",
+    images: ["/og.png"],
   },
 };
 
