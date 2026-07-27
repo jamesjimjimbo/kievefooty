@@ -1,6 +1,6 @@
 # Kieve Footy
 
-Mobile-first fantasy-style Premier League picks for a private group of friends. This v1 includes a polished demo UI, Supabase-ready auth/data architecture, scripted Competition Weeks, picks, ledger-based scoring, three standings, challenges, admin scaffolding and tested domain rules.
+Mobile-first fantasy-style Premier League picks for a private group of friends. This v1 includes a polished responsive UI, Supabase auth/data architecture, scripted Competition Weeks, live picks, ledger-based scoring, three standings, post-lock league pick visibility, challenges, weekly admin game configuration and tested domain rules.
 
 ## Local setup
 
@@ -20,7 +20,7 @@ Open `http://localhost:3000`. Protected pages require a confirmed Supabase accou
 2. Link the Supabase CLI, then run `supabase db push`.
 3. Run `supabase db seed`, or paste `supabase/seed.sql` in the SQL editor.
 4. Create the first user through `/auth/sign-up`; the database trigger creates its profile automatically. Then set `is_admin = true` for that profile in the Supabase Table Editor.
-5. Add fixtures/odds in the SQL editor or extend the `/admin` mutations.
+5. Add fixtures/odds in the SQL editor. Use `/admin` to mark eligible fixtures, select the Game of the Week, and synchronize the lock to the first kickoff.
 
 The browser receives only the publishable key. No service-role key is required by v1. Admin status, deadlines, visibility, challenge uniqueness and ledger access are enforced in Postgres/RLS.
 

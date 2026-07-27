@@ -9,6 +9,8 @@ type ExistingPick={fixture_id:string;kind:"gotw"|"own";selected_outcome:Outcome;
 export type PicksPageData={
   week:{id:string;number:number;label:string;lockAt:string;lockLabel:string};bankroll:number;rank:number;fixtures:Fixture[];
   existing:{gotw?:ExistingPick;own?:ExistingPick;source?:string};opponents:{id:string;display_name:string}[];challengeTokens:number;locked:boolean;
+  standings:{id:string;name:string;score:number;me:boolean}[];
+  leaguePicks:{userId:string;name:string;source:"manual"|"auto";picks:{fixtureId:string;fixture:string;kind:"gotw"|"own";outcome:Outcome;stake:number;odds:number;isCorrect:boolean|null}[]}[];
 };
 
 function FixtureCard({fixture,selection,onSelect,stake,setStake,label,disabled}:{fixture:Fixture;selection?:Outcome;onSelect:(o:Outcome)=>void;stake:number;setStake:(n:number)=>void;label?:string;disabled?:boolean}) {
@@ -35,17 +37,33 @@ function LivePicks({data}:{data:PicksPageData}){
   const adjustGotw=(n:number)=>{setMessage("");setGotwStake(n);setOtherStake(10-n)};const adjustOther=(n:number)=>{setMessage("");setOtherStake(n);setGotwStake(10-n)};
   const submit=()=>startTransition(async()=>{if(!gotwPick||!otherPick||!other)return;const result=await saveWeeklyPicks({weekId:data.week.id,gotwFixtureId:gotw.id,gotwOutcome:gotwPick,gotwStake,ownFixtureId:other.id,ownOutcome:otherPick,ownStake:otherStake});setMessage(result.error??"Picks saved. You can edit until the deadline.")});
   const challenge=()=>startTransition(async()=>{if(!opponent)return;const result=await createChallenge({weekId:data.week.id,opponentId:opponent});setMessage(result.error??"Challenge sent. No acceptance needed.")});
-  return <AppShell><main className="content">
+  return <AppShell><main className="content content-wide picks-page">
     <div className="page-head"><div><p className="eyebrow">Competition week {data.week.number}</p><h1>Your picks</h1><p className="subtle">{data.week.label}</p></div><span className={`pill ${data.locked?"":"live"}`}><Clock3 size={13}/>{data.locked?"Locked":"Open"}</span></div>
-    <section className="card hero-card"><p className="eyebrow" style={{color:"#cde6dc"}}>What you need to know</p><h2 style={{marginBottom:6}}>Lock in by {data.week.lockLabel}</h2><p style={{opacity:.72,marginBottom:0}}>Both picks lock together. You can edit freely until then.</p><div className="stat-row"><div className="stat"><span className="stat-label">Bankroll</span><span className="stat-value">{data.bankroll}</span></div><div className="stat"><span className="stat-label">This week</span><span className="stat-value">10</span></div><div className="stat"><span className="stat-label">Your rank</span><span className="stat-value">{data.rank}</span></div></div></section>
-    <div className="section-label"><div><p className="eyebrow">Required</p><h2>Game of the Week</h2></div><ShieldQuestion size={21}/></div>
-    <FixtureCard fixture={gotw} selection={gotwPick} onSelect={o=>{setMessage("");setGotwPick(o)}} stake={gotwStake} setStake={adjustGotw} label="GOTW" disabled={data.locked}/>
-    <div className="section-label"><div><p className="eyebrow">Your choice</p><h2>Choose one other match</h2></div></div>
-    <div className="card" style={{marginBottom:14}}><label className="field" style={{margin:0}}>Fixture<select disabled={data.locked} value={otherId} onChange={e=>{setOtherId(e.target.value);setOtherPick(undefined);setMessage("")}} style={{minHeight:48,border:"1px solid var(--line)",borderRadius:13,padding:"0 12px",background:"white"}}>{others.map(f=><option value={f.id} key={f.id}>{f.home} vs {f.away}</option>)}</select></label></div>
-    {other&&<FixtureCard fixture={other} selection={otherPick} onSelect={o=>{setMessage("");setOtherPick(o)}} stake={otherStake} setStake={adjustOther} disabled={data.locked}/>}
-    {message&&<div className={message.toLowerCase().includes("error")?"notice":"saved"}><CheckCircle2 size={20}/>{message}</div>}
-    <div className="allocation"><div className="allocation-row"><b>Allocated: {gotwStake} + {otherStake} = {total}</b><span>{Math.max(0,10-total)} remaining</span></div><div className="progress"><div style={{width:`${Math.min(100,total*10)}%`}}/></div><button className="primary" disabled={!valid||pending} onClick={submit}>{pending?"Saving…":data.locked?"Picks locked":"Save weekly picks"}</button></div>
-    <div className="section-label"><h2>Challenge a mate</h2><span className="pill">{data.challengeTokens} left</span></div>
-    <div className="card"><p className="subtle">Higher normal-bet result wins the 10-point transfer.</p>{data.opponents.length?<><label className="field">Opponent<select value={opponent} onChange={e=>setOpponent(e.target.value)}>{data.opponents.map(p=><option key={p.id} value={p.id}>{p.display_name}</option>)}</select></label><button className="secondary" disabled={pending||data.locked} onClick={challenge}>Issue challenge</button></>:<p className="subtle">No unused opponents yet.</p>}</div>
+    <div className="picks-layout"><div>
+      <section className="card hero-card compact-hero"><div><p className="eyebrow" style={{color:"#cde6dc"}}>Weekly deadline</p><h2 style={{marginBottom:6}}>Lock in by {data.week.lockLabel}</h2><p style={{opacity:.72,marginBottom:0}}>The first eligible kickoff locks both picks.</p></div><div className="stat-row"><div className="stat"><span className="stat-label">Bankroll</span><span className="stat-value">{data.bankroll}</span></div><div className="stat"><span className="stat-label">Allocation</span><span className="stat-value">10</span></div><div className="stat"><span className="stat-label">Your rank</span><span className="stat-value">{data.rank}</span></div></div></section>
+      <div className="section-label"><div><p className="eyebrow">Required</p><h2>Game of the Week</h2></div><ShieldQuestion size={21}/></div>
+      <FixtureCard fixture={gotw} selection={gotwPick} onSelect={o=>{setMessage("");setGotwPick(o)}} stake={gotwStake} setStake={adjustGotw} label="GOTW" disabled={data.locked}/>
+      <div className="section-label"><div><p className="eyebrow">Your choice</p><h2>Choose one other match</h2></div></div>
+      <div className="card fixture-select"><label className="field" style={{margin:0}}>Fixture<select disabled={data.locked} value={otherId} onChange={e=>{setOtherId(e.target.value);setOtherPick(undefined);setMessage("")}}>{others.map(f=><option value={f.id} key={f.id}>{f.home} vs {f.away}</option>)}</select></label></div>
+      {other&&<FixtureCard fixture={other} selection={otherPick} onSelect={o=>{setMessage("");setOtherPick(o)}} stake={otherStake} setStake={adjustOther} disabled={data.locked}/>}
+      {message&&<div className={message.toLowerCase().includes("error")?"notice":"saved"}><CheckCircle2 size={20}/>{message}</div>}
+      <div className="allocation"><div className="allocation-summary"><div className="allocation-row"><b>{gotwStake} + {otherStake} = {total} allocated</b><span>{Math.max(0,10-total)} remaining</span></div><div className="progress"><div style={{width:`${Math.min(100,total*10)}%`}}/></div></div><button className="primary" disabled={!valid||pending} onClick={submit}>{pending?"Saving…":data.locked?"Picks locked":"Save picks"}</button></div>
+      {data.locked&&<LockedLeaguePicks entries={data.leaguePicks}/>}
+    </div><aside className="picks-sidebar">
+      <StandingsSnapshot rows={data.standings}/>
+      <div className="section-label"><h2>Challenge a mate</h2><span className="pill">{data.challengeTokens} left</span></div>
+      <div className="card"><p><b>Put 10 points head-to-head.</b></p><p className="subtle challenge-copy">Choose an opponent before lock. No acceptance is needed. Your two normal picks are compared; the higher weekly net wins a 10-point transfer. A tie transfers nothing, but the challenge is used.</p>{data.opponents.length?<><label className="field">Opponent<select value={opponent} onChange={e=>setOpponent(e.target.value)}>{data.opponents.map(p=><option key={p.id} value={p.id}>{p.display_name}</option>)}</select></label><button className="secondary" disabled={pending||data.locked} onClick={challenge}>Issue challenge</button></>:<p className="subtle">You have challenged every available opponent once, or no other players have joined yet.</p>}</div>
+    </aside></div>
   </main></AppShell>;
+}
+
+function StandingsSnapshot({rows}:{rows:PicksPageData["standings"]}){
+  const top=[...rows].sort((a,b)=>b.score-a.score).slice(0,8);
+  return <section><div className="section-label"><h2>League table</h2><a className="text-link" href="/standings">Full standings →</a></div><div className="card table compact-table">{top.map((row,index)=><div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><span className="player">{row.name}{row.me&&<small>You</small>}</span><span className="points">{row.score>0?"+":""}{row.score}</span></div>)}</div></section>;
+}
+
+function LockedLeaguePicks({entries}:{entries:PicksPageData["leaguePicks"]}){
+  return <section className="locked-picks"><div className="section-label"><div><p className="eyebrow">Deadline passed</p><h2>Everyone&apos;s picks</h2></div></div>
+    {entries.length?<div className="league-pick-grid">{entries.map(entry=><article className="card league-pick-card" key={entry.userId}><div className="league-pick-head"><b>{entry.name}</b>{entry.source==="auto"&&<span className="pill">Auto-picks</span>}</div>{entry.picks.sort((a,b)=>a.kind.localeCompare(b.kind)).map(p=>{const potential=Math.round((p.stake*p.odds-p.stake)*100)/100;const result=p.isCorrect===null?null:p.isCorrect?potential:-p.stake;return <div className="revealed-pick" key={p.kind}><div><small>{p.kind==="gotw"?"Game of the Week":"Own pick"}</small><b>{p.fixture}</b><span>{p.outcome.toUpperCase()} · {p.stake} pts @ {p.odds.toFixed(2)}</span></div><strong className={result!==null&&result<0?"negative":""}>{result===null?`Potential +${potential}`:`${result>0?"+":""}${result}`}</strong></div>})}</article>)}</div>:<div className="card"><p className="subtle" style={{margin:0}}>No submissions were recorded for this week.</p></div>}
+  </section>;
 }

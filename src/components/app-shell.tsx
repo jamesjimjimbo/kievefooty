@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, ListChecks, Trophy, UserRound } from "lucide-react";
+import { BookOpen, CalendarDays, ListChecks, Trophy, UserRound } from "lucide-react";
 import { useEffect,useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 const nav = [
@@ -22,6 +22,6 @@ export function AppShell({children}:{children:React.ReactNode}) {
     </Link>)}</nav>;
   return <div className="app-shell"><header className="topbar"><div className="topbar-inner">
     <Link href="/picks" className="wordmark"><span className="ball-mark">⚽</span>Kieve Footy</Link>
-    {navigation}<div className="top-actions">{isAdmin&&<Link className="admin-link" href="/admin">Admin</Link>}<span className="avatar">{initials}</span></div>
+    {navigation}<div className="top-actions"><Link className="rules-link" href="/rules"><BookOpen size={16}/><span>Rules</span></Link>{isAdmin&&<Link className="admin-link" href="/admin">Admin</Link>}<Link href="/profile" className="avatar" aria-label="Open profile">{initials}</Link></div>
   </div></header>{children}<div className="mobile-only">{navigation}</div></div>;
 }
