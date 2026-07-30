@@ -492,8 +492,44 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 /* Season competitions */
 .competitions-explainer { display: flex; gap: 13px; margin-bottom: 14px; box-shadow: none; }
 .competitions-explainer p { margin: 4px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.competition-roadmap { padding: 0; overflow: hidden; box-shadow: none; }
+.roadmap-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 17px 16px; color: white; background: linear-gradient(120deg,var(--primary-dark),var(--primary) 68%,#6f53ea); }
+.roadmap-head h2 { margin: 3px 0 4px; font-size: 19px; }
+.roadmap-head p { margin: 0; color: rgba(255,255,255,.68); font-size: 10px; }
+.roadmap-head .eyebrow { color: #7de6ed; }
+.roadmap-progress { min-width: 68px; display: grid; place-items: center; padding: 10px; border: 1px solid rgba(255,255,255,.16); border-radius: 14px; background: rgba(255,255,255,.1); }
+.roadmap-progress b { font-size: 18px; }
+.roadmap-progress span { color: rgba(255,255,255,.68); font-size: 8px; font-weight: 850; text-transform: uppercase; letter-spacing: .06em; }
+.roadmap-track { display: grid; padding: 4px 14px; }
+.roadmap-item { position: relative; min-width: 0; display: grid; grid-template-columns: 28px minmax(0,1fr) auto; align-items: center; gap: 4px 9px; min-height: 78px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.roadmap-item:last-child { border-bottom: 0; }
+.roadmap-item::before { content: ""; position: absolute; left: 13px; top: 0; bottom: 0; width: 2px; background: #e2dff5; }
+.roadmap-item:first-child::before { top: 50%; }
+.roadmap-item:last-child::before { bottom: 50%; }
+.roadmap-node { z-index: 1; width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: white; box-shadow: 0 0 0 2px #dcd8f4; }
+.roadmap-node i { width: 20px; height: 20px; display: grid; place-items: center; color: var(--primary); border-radius: 50%; background: var(--lavender); font-size: 8px; font-style: normal; font-weight: 950; }
+.roadmap-item.complete .roadmap-node { box-shadow: 0 0 0 2px #aeeadd; }
+.roadmap-item.complete .roadmap-node i { color: #087f72; background: var(--mint); }
+.roadmap-item.action .roadmap-node { box-shadow: 0 0 0 2px #ffcbd3; }
+.roadmap-item.action .roadmap-node i { color: #b6354c; background: #ffe8ed; }
+.roadmap-main { min-width: 0; display: grid; gap: 3px; }
+.roadmap-main b { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.roadmap-main small { color: var(--muted); font-size: 8px; line-height: 1.35; }
+.roadmap-score { grid-column: 2 / -1; min-width: 0; display: grid; gap: 2px; padding-right: 4px; }
+.roadmap-score small { color: var(--muted); font-size: 7px; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; }
+.roadmap-score b { color: var(--primary); font-size: 9px; line-height: 1.35; }
+.roadmap-state { display: inline-flex; align-items: center; gap: 4px; padding: 6px 7px; border-radius: 99px; color: var(--muted); background: #f0eff7; font-size: 8px; font-weight: 900; white-space: nowrap; }
+.roadmap-state.complete { color: #087f72; background: var(--mint); }
+.roadmap-state.action { color: #b6354c; background: #ffe8ed; }
+.roadmap-state.missed { color: #9c4a2c; background: #fff2e9; }
+.roadmap-note { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 10px; padding: 12px 14px; border-top: 1px solid var(--line); background: #faf9ff; }
+.roadmap-note p { margin: 0; color: var(--muted); font-size: 9px; line-height: 1.45; }
+.roadmap-note b { color: var(--ink); }
+.competition-picks-heading { align-items: flex-end; margin: 25px 2px 12px; }
+.competition-picks-heading p { margin: 5px 0 0; font-size: 10px; }
+.competition-picks-heading > svg { color: var(--primary); }
 .market-grid { display: grid; gap: 13px; }
-.market-card { display: grid; gap: 14px; box-shadow: none; }
+.market-card { display: grid; gap: 14px; scroll-margin-top: 94px; box-shadow: none; }
 .market-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 13px; }
 .market-head h2 { margin: 5px 0 5px; }
 .market-head p { margin: 0; font-size: 11px; }
@@ -706,6 +742,8 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
   .month-calendar-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
   .month-calendar { padding: 17px; }
   .market-grid { grid-template-columns: 1fr 1fr; }
+  .roadmap-item { grid-template-columns: 28px minmax(150px,.9fr) minmax(220px,1.25fr) auto; gap: 12px; min-height: 65px; }
+  .roadmap-score { grid-column: auto; padding-right: 0; }
   .market-grid-later { grid-template-columns: repeat(3,1fr); }
   .prediction-market-grid { grid-template-columns: 1fr 1fr; }
   .payout-strip { grid-template-columns: repeat(4,1fr); }
