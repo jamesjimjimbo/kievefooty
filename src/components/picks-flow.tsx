@@ -49,11 +49,17 @@ function LivePicks({data}:{data:PicksPageData}){
     {data.previousWeek&&<WeeklyRecap recap={data.previousWeek}/>}
     <div className="picks-layout"><div>
       <section className="card hero-card compact-hero"><div><p className="eyebrow">Weekly deadline</p><h2>Lock in by {data.week.lockLabel}</h2><p>The first eligible kickoff locks both picks.</p></div><div className="stat-row"><div className="stat"><span className="stat-label">Bankroll</span><span className="stat-value">{data.bankroll}</span></div><div className="stat"><span className="stat-label">Your rank</span><span className="stat-value">#{data.rank}</span></div></div></section>
-      <div className="section-label"><div><p className="eyebrow">Required</p><h2>Game of the Week</h2></div><ShieldQuestion size={21}/></div>
-      <FixtureCard fixture={gotw} selection={gotwPick} onSelect={o=>{setMessage("");setGotwPick(o)}} stake={gotwStake} setStake={adjustGotw} label="GOTW" disabled={data.locked}/>
-      <div className="section-label"><div><p className="eyebrow">Your choice</p><h2>Choose one other match</h2></div></div>
-      <div className="card fixture-select"><label className="field" style={{margin:0}}>Fixture<select disabled={data.locked} value={otherId} onChange={e=>{setOtherId(e.target.value);setOtherPick(undefined);setMessage("")}}>{others.map(f=><option value={f.id} key={f.id}>{f.home} vs {f.away}</option>)}</select></label></div>
-      {other&&<FixtureCard fixture={other} selection={otherPick} onSelect={o=>{setMessage("");setOtherPick(o)}} stake={otherStake} setStake={adjustOther} disabled={data.locked}/>}
+      <div className="pick-choice-grid">
+        <section className="pick-choice">
+          <div className="section-label"><div><p className="eyebrow">Required</p><h2>Game of the Week</h2></div><ShieldQuestion size={21}/></div>
+          <FixtureCard fixture={gotw} selection={gotwPick} onSelect={o=>{setMessage("");setGotwPick(o)}} stake={gotwStake} setStake={adjustGotw} label="GOTW" disabled={data.locked}/>
+        </section>
+        <section className="pick-choice">
+          <div className="section-label"><div><p className="eyebrow">Your choice</p><h2>One other match</h2></div></div>
+          <div className="card fixture-select"><label className="field" style={{margin:0}}>Fixture<select disabled={data.locked} value={otherId} onChange={e=>{setOtherId(e.target.value);setOtherPick(undefined);setMessage("")}}>{others.map(f=><option value={f.id} key={f.id}>{f.home} vs {f.away}</option>)}</select></label></div>
+          {other&&<FixtureCard fixture={other} selection={otherPick} onSelect={o=>{setMessage("");setOtherPick(o)}} stake={otherStake} setStake={adjustOther} disabled={data.locked}/>}
+        </section>
+      </div>
       {message&&<div className={message.toLowerCase().includes("error")?"notice":"saved"}><CheckCircle2 size={20}/>{message}</div>}
       <div className="save-picks"><p>Your split stays balanced automatically. Edit any pick until the deadline.</p><button className="primary" disabled={!valid||pending} onClick={submit}>{pending?"Saving…":data.locked?"Picks locked":"Save picks"}</button></div>
       {data.locked&&<LockedLeaguePicks entries={data.leaguePicks}/>}

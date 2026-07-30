@@ -9,6 +9,7 @@ export default async function Page({searchParams}:{searchParams:Promise<{error?:
     <p className="eyebrow">Join the competition</p><h1>Claim your shirt.</h1><p className="subtle">Create the account you&apos;ll use for picks, challenges and the table.</p>
     {params.error&&<div className="notice">{params.error}</div>}
     <form action={signUp}><input type="hidden" name="origin" value={origin}/>
+      <label className="field">League invite code<input name="invite_code" autoComplete="off" required spellCheck={false} placeholder="Enter your invite code"/></label>
       <label className="field">Display name<input name="display_name" required maxLength={50} placeholder="James"/></label>
       <label className="field">Email<input name="email" type="email" autoComplete="email" required placeholder="you@example.com"/></label>
       <label className="field">Password<input name="password" type="password" autoComplete="new-password" required minLength={8} placeholder="At least 8 characters"/></label>

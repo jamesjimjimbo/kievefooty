@@ -6,8 +6,11 @@ export type StandingPlayer={
   id:string;name:string;initials:string;first:number;second:number;overall:number;
   projected:number;seasonProjection:number;accuracyCorrect:number;accuracyTotal:number;me:boolean;
 };
+export type StandingHistoryRow={
+  week_number:number;week_label:string;week_end:string;user_id:string;display_name:string;score:number;
+};
 
-export function StandingsBoard({players}:{players:StandingPlayer[]}){
+export function StandingsBoard({players,history}:{players:StandingPlayer[];history:StandingHistoryRow[]}){
   return <AppShell><main className="content content-wide">
     <div className="page-head"><div><p className="eyebrow">2026 / 27</p><h1>Standings</h1><p className="subtle">Every competition, all in one place.</p></div></div>
     <section className="standings-grid">
@@ -16,6 +19,7 @@ export function StandingsBoard({players}:{players:StandingPlayer[]}){
       <FullCompetition players={players}/>
       <AccuracyCompetition players={players}/>
     </section>
+    <StandingsHistory rows={history}/>
     <p className="standings-footnote">Weekly 10-point credits never count here. Projected Full Competition scores are informational and do not alter official points.</p>
   </main></AppShell>;
 }
@@ -41,5 +45,37 @@ function FullCompetition({players}:{players:StandingPlayer[]}){
 function AccuracyCompetition({players}:{players:StandingPlayer[]}){
   const accuracyRate=(player:StandingPlayer)=>player.accuracyTotal?player.accuracyCorrect/player.accuracyTotal:0;
   const sorted=[...players].sort((a,b)=>b.accuracyCorrect-a.accuracyCorrect||accuracyRate(b)-accuracyRate(a)||a.name.localeCompare(b.name));
-  return <article className="card standings-card"><CompetitionHeader title="Most Accurate Picker" prize="10%" description="Most correct picks in normal Competition Weeks."/><div className="table competition-table">{sorted.map((player,index)=><div className={`standing-row accuracy-row ${player.me?"me":""}`} key={player.id}><span className="rank">{index+1}</span><PlayerCell player={player}/><span className="accuracy-score"><b>{player.accuracyCorrect}</b><small>of {player.accuracyTotal}</small></span></div>)}</div></article>;
+  return <article className="card standings-card"><CompetitionHeader title="Most Accurate Picker" prize="10%" description="Most correct picks, including both Casino periods."/><div className="table competition-table">{sorted.map((player,index)=><div className={`standing-row accuracy-row ${player.me?"me":""}`} key={player.id}><span className="rank">{index+1}</span><PlayerCell player={player}/><span className="accuracy-score"><b>{player.accuracyCorrect}</b><small>of {player.accuracyTotal}</small></span></div>)}</div></article>;
+}
+
+const historyColors=["#4f3bd8","#ff6678","#0f9eb7","#ff9a3c","#7c3ff0","#0a8f78","#c14d87","#53657d"];
+
+function StandingsHistory({rows}:{rows:StandingHistoryRow[]}){
+  const weeks=Array.from(new Map(rows.map(row=>[row.week_number,{number:row.week_number,label:row.week_label,end:row.week_end}])).values()).sort((a,b)=>a.number-b.number);
+  const players=Array.from(new Map(rows.map(row=>[row.user_id,{id:row.user_id,name:row.display_name}])).values()).sort((a,b)=>a.name.localeCompare(b.name));
+  const scoreMap=new Map(rows.map(row=>[`${row.user_id}:${row.week_number}`,row.score]));
+  if(!weeks.length||!players.length)return <section className="standings-history card"><header><div><p className="eyebrow">Week by week</p><h2>Standings race</h2></div></header><p className="history-empty">The race chart will appear after the first Competition Week has results.</p></section>;
+
+  const width=760,height=300,left=48,right=18,top=22,bottom=42;
+  const scores=rows.map(row=>row.score);const rawMin=Math.min(0,...scores),rawMax=Math.max(0,...scores);
+  const padding=Math.max(5,(rawMax-rawMin)*.12);const min=rawMin-padding,max=rawMax+padding;
+  const x=(index:number)=>left+(weeks.length===1?0:(index/(weeks.length-1))*(width-left-right));
+  const y=(score:number)=>top+((max-score)/(max-min))*(height-top-bottom);
+  const ticks=Array.from({length:5},(_,index)=>max-(index/4)*(max-min));
+  return <section className="standings-history card">
+    <header><div><p className="eyebrow">Week by week</p><h2>Standings race</h2><p>Hover or press a point to see each player&apos;s running total.</p></div></header>
+    <div className="history-legend">{players.map((player,index)=><span key={player.id}><i style={{background:historyColors[index%historyColors.length]}}/>{player.name}</span>)}</div>
+    <div className="history-chart-scroll">
+      <svg className="history-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Full Competition points by Competition Week">
+        {ticks.map((tick,index)=>{const tickY=y(tick);return <g key={index}><line x1={left} x2={width-right} y1={tickY} y2={tickY}/><text x={left-8} y={tickY+3} textAnchor="end">{Math.round(tick)}</text></g>})}
+        {weeks.map((week,index)=>weeks.length<=10||index===0||index===weeks.length-1||index%Math.ceil(weeks.length/8)===0?<text className="history-x-label" x={x(index)} y={height-14} textAnchor="middle" key={week.number}>W{week.number}</text>:null)}
+        {players.map((player,playerIndex)=>{
+          const points=weeks.map((week,index)=>({week,index,score:scoreMap.get(`${player.id}:${week.number}`)??0}));
+          const path=points.map((point,index)=>`${index?"L":"M"} ${x(point.index)} ${y(point.score)}`).join(" ");
+          const color=historyColors[playerIndex%historyColors.length];
+          return <g className="history-series" key={player.id}><path d={path} style={{stroke:color}}/>{points.map(point=><circle cx={x(point.index)} cy={y(point.score)} r="5" style={{fill:color}} tabIndex={0} key={point.week.number}><title>{player.name} - {point.week.label}: {point.score>0?"+":""}{point.score} points</title></circle>)}</g>;
+        })}
+      </svg>
+    </div>
+  </section>;
 }

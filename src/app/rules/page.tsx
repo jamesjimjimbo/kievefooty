@@ -11,8 +11,8 @@ export const dynamic="force-dynamic";
 const coreRules=[
   {
     title:"Weekly picks",
-    summary:"Two selections, split 10 points",
-    body:"Pick Home, Draw, or Away for the Game of the Week and one other eligible fixture. Split exactly 10 points across the two selections, with at least 1 point on each.",
+    summary:"10 new points each active Friday",
+    body:"Before games begin each active Friday, everyone receives 10 new points to wager. Pick Home, Draw, or Away for the Game of the Week and one other eligible fixture, then split all 10 points across them with at least 1 point on each. International-break Fridays receive no credit; Casino weeks do.",
   },
   {
     title:"Lock and visibility",
@@ -22,7 +22,7 @@ const coreRules=[
   {
     title:"Weekly scoring",
     summary:"Wins earn net profit; misses lose the stake",
-    body:"A correct pick scores stake × decimal odds − stake. An incorrect pick loses the stake. The weekly 10-point credit funds participation but never counts toward competitive standings.",
+    body:"A correct pick scores stake × decimal odds − stake. An incorrect pick loses the stake. Each 10-point Friday credit funds participation but never counts toward competitive standings.",
   },
   {
     title:"Challenges",
@@ -32,7 +32,7 @@ const coreRules=[
   {
     title:"Standings and bonuses",
     summary:"First Half, Second Half, and Full Competition",
-    body:"Half tables count normal weekly results only. Full Competition also counts challenges, season-long results, Casinos, and bonuses. The separate 10% accuracy prize goes to the player with the most correct normal Game Week picks. Three correct Games of the Week in a row earns +10; the streak then resets.",
+    body:"Half tables count normal weekly results only. Full Competition also counts challenges, season-long results, Casinos, and bonuses. The separate 10% accuracy prize goes to the player with the most correct picks, including Casino picks. Three correct Games of the Week in a row earns +10; the streak then resets.",
   },
   {
     title:"Casino periods",
@@ -61,10 +61,15 @@ export default async function RulesPage(){
     <div className="page-head compact-page-head"><div><p className="eyebrow">The useful version</p><h1>Rules</h1><p className="subtle">Everything that changes your score, without the legal-document energy.</p></div></div>
 
     <section className="payout-strip">
-      <div><b>15%</b><span>First Half</span></div>
-      <div><b>10%</b><span>Most accurate picker</span></div>
-      <div><b>15%</b><span>Second Half</span></div>
-      <div><b>60%</b><span>Full Competition</span></div>
+      <div><b>15%</b><span>First Half</span><small>Most points from Aug 21-Jan 2</small></div>
+      <div><b>15%</b><span>Second Half</span><small>Most points from Jan 6-May 30</small></div>
+      <div><b>60%</b><span>Full Competition</span><small>Total points after the June 5 UCL final</small></div>
+      <div><b>10%</b><span>Most accurate picker</span><small>Most correct picks, including Casinos</small></div>
+    </section>
+
+    <section className="weekly-credit-callout">
+      <div><b>330 points to wager</b><span>33 active Fridays × 10 points</span></div>
+      <p>That total includes six Casino Fridays and excludes the three international windows. Credits fund bets; they do not inflate the standings.</p>
     </section>
 
     <div className="rules-layout">
