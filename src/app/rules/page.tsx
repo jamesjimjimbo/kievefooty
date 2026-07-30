@@ -12,12 +12,12 @@ const coreRules=[
   {
     title:"Weekly picks",
     summary:"10 new points each active Friday",
-    body:"Before games begin each active Friday, everyone receives 10 new points to wager. Pick Home, Draw, or Away for the Game of the Week and one other eligible fixture, then split all 10 points across them with at least 1 point on each. International-break Fridays receive no credit; Casino weeks do.",
+    body:"Before games begin each active Friday, everyone receives 10 new points to wager. Pick Home, Draw, or Away for the Game of the Week and one other eligible fixture, then split all 10 points across them with at least 1 point on each. International-break Fridays receive no credit; FA Cup and Casino weeks do.",
   },
   {
     title:"Lock and visibility",
     summary:"Both picks lock together",
-    body:"Both selections lock at the first eligible Premier League kickoff of the Competition Week. Before lock, only you and the admin can see your picks. After lock, the league can see every pick, stake, odds, and potential result.",
+    body:"Both selections lock at the first eligible kickoff of the Competition Week. Before lock, only you and the admin can see your picks. After lock, the league can see every pick, stake, odds, and potential result.",
   },
   {
     title:"Weekly scoring",
@@ -32,7 +32,7 @@ const coreRules=[
   {
     title:"Standings and bonuses",
     summary:"First Half, Second Half, and Full Competition",
-    body:"Half tables count normal weekly results only. Full Competition also counts challenges, season-long results, Casinos, and bonuses. The separate 10% accuracy prize goes to the player with the most correct picks, including Casino picks. Three correct Games of the Week in a row earns +10; the streak then resets.",
+    body:"Half tables count normal weekly results only. Full Competition also counts challenges, season-long results, Casinos, and bonuses. The separate 10% accuracy prize goes to the player with the most correct picks, including FA Cup and Casino picks. Three correct Games of the Week in a row earns +10; the streak then resets.",
   },
   {
     title:"Casino periods",
@@ -68,8 +68,8 @@ export default async function RulesPage(){
     </section>
 
     <section className="weekly-credit-callout">
-      <div><b>330 points to wager</b><span>33 active Fridays × 10 points</span></div>
-      <p>That total includes six Casino Fridays and excludes the three international windows. Credits fund bets; they do not inflate the standings.</p>
+      <div><b>370 points to wager</b><span>37 active Fridays × 10 points</span></div>
+      <p>That includes four FA Cup and six Casino Fridays. Credits fund bets; they do not inflate the standings.</p>
     </section>
 
     <div className="rules-layout">

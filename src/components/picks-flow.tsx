@@ -1,6 +1,6 @@
 "use client";
-import { useState,useTransition } from "react";
-import { CheckCircle2,Clock3,ShieldQuestion } from "lucide-react";
+import { useEffect,useRef,useState,useTransition } from "react";
+import { CheckCircle2,Clock3,LoaderCircle,RefreshCw,ShieldQuestion,Swords } from "lucide-react";
 import type { Fixture,Outcome } from "@/lib/demo-data";
 import { AppShell } from "@/components/app-shell";
 import { ClubCrest } from "@/components/club-crest";
@@ -8,7 +8,7 @@ import { createChallenge,saveWeeklyPicks } from "@/app/picks/actions";
 
 type ExistingPick={fixture_id:string;kind:"gotw"|"own";selected_outcome:Outcome;stake:number};
 export type PicksPageData={
-  week:{id:string;number:number;label:string;lockAt:string;lockLabel:string};bankroll:number;rank:number;fixtures:Fixture[];
+  week:{id:string;number:number;label:string;lockAt:string;lockLabel:string;competition:string};bankroll:number;rank:number;fixtures:Fixture[];
   existing:{gotw?:ExistingPick;own?:ExistingPick;source?:string};opponents:{id:string;display_name:string}[];challengeTokens:number;locked:boolean;
   standings:{
     first:{id:string;name:string;score:number;me:boolean}[];
@@ -17,6 +17,7 @@ export type PicksPageData={
     projected:{id:string;name:string;score:number;me:boolean;seasonProjection:number}[];
   };
   leaguePicks:{userId:string;name:string;source:"manual"|"auto";picks:{fixtureId:string;fixture:string;kind:"gotw"|"own";outcome:Outcome;stake:number;odds:number;isCorrect:boolean|null}[]}[];
+  weekChallenges:{id:string;challenger:string;opponent:string;challengerNet:number|null;opponentNet:number|null}[];
   previousWeek?:{label:string;winner:{id:string;name:string;score:number};loser:{id:string;name:string;score:number}};
 };
 
@@ -38,14 +39,39 @@ function LivePicks({data}:{data:PicksPageData}){
   const [otherId,setOtherId]=useState(data.existing.own?.fixture_id??others[0]?.id);
   const [otherPick,setOtherPick]=useState<Outcome|undefined>(data.existing.own?.selected_outcome);
   const [gotwStake,setGotwStake]=useState(Number(data.existing.gotw?.stake??5));const [otherStake,setOtherStake]=useState(Number(data.existing.own?.stake??5));
-  const [message,setMessage]=useState(data.existing.source?`${data.existing.source==="auto"?"Auto-picks":"Picks"} saved`:"");
+  const [message,setMessage]=useState("");
+  const [saveStatus,setSaveStatus]=useState<"idle"|"waiting"|"saving"|"saved"|"error">(data.existing.source?"saved":"idle");
+  const [saveError,setSaveError]=useState("");
+  const [retryNonce,setRetryNonce]=useState(0);
   const [opponent,setOpponent]=useState(data.opponents[0]?.id??"");const [pending,startTransition]=useTransition();
-  const other=others.find(f=>f.id===otherId);const total=gotwStake+otherStake;const valid=Boolean(gotwPick&&otherPick&&other&&total===10&&!data.locked);
+  const other=others.find(f=>f.id===otherId);const total=gotwStake+otherStake;
+  const signature=gotwPick&&otherPick&&other&&total===10
+    ?`${gotw.id}:${gotwPick}:${gotwStake}|${other.id}:${otherPick}:${otherStake}`
+    :"";
+  const initialSignature=data.existing.gotw&&data.existing.own
+    ?`${gotw.id}:${data.existing.gotw.selected_outcome}:${Number(data.existing.gotw.stake)}|${data.existing.own.fixture_id}:${data.existing.own.selected_outcome}:${Number(data.existing.own.stake)}`
+    :"";
+  const lastSaved=useRef(initialSignature);
   const adjustGotw=(n:number)=>{setMessage("");setGotwStake(n);setOtherStake(10-n)};const adjustOther=(n:number)=>{setMessage("");setOtherStake(n);setGotwStake(10-n)};
-  const submit=()=>startTransition(async()=>{if(!gotwPick||!otherPick||!other)return;const result=await saveWeeklyPicks({weekId:data.week.id,gotwFixtureId:gotw.id,gotwOutcome:gotwPick,gotwStake,ownFixtureId:other.id,ownOutcome:otherPick,ownStake:otherStake});setMessage(result.error??"Picks saved. You can edit until the deadline.")});
   const challenge=()=>startTransition(async()=>{if(!opponent)return;const result=await createChallenge({weekId:data.week.id,opponentId:opponent});setMessage(result.error??"Challenge sent. No acceptance needed.")});
+  useEffect(()=>{
+    if(data.locked||!signature||signature===lastSaved.current)return;
+    setSaveStatus("waiting");setSaveError("");
+    const timer=window.setTimeout(()=>{
+      if(!gotwPick||!otherPick||!other)return;
+      setSaveStatus("saving");
+      void saveWeeklyPicks({
+        weekId:data.week.id,gotwFixtureId:gotw.id,gotwOutcome:gotwPick,gotwStake,
+        ownFixtureId:other.id,ownOutcome:otherPick,ownStake:otherStake,
+      }).then(result=>{
+        if(result.error){setSaveStatus("error");setSaveError(result.error);return}
+        lastSaved.current=signature;setSaveStatus("saved");setSaveError("");
+      });
+    },650);
+    return ()=>window.clearTimeout(timer);
+  },[data.locked,data.week.id,gotw.id,gotwPick,gotwStake,other,otherPick,otherStake,retryNonce,signature]);
   return <AppShell><main className="content content-wide picks-page">
-    <div className="picks-topline"><div><span>Competition week {data.week.number}</span><b>{data.week.label}</b></div><span className={`pill ${data.locked?"":"live"}`}><Clock3 size={13}/>{data.locked?"Locked":"Open"}</span></div>
+    <div className="picks-topline"><div><span>{data.week.competition} · Week {data.week.number}</span><b>{data.week.label}</b></div><span className={`pill ${data.locked?"":"live"}`}><Clock3 size={13}/>{data.locked?"Locked":"Open"}</span></div>
     {data.previousWeek&&<WeeklyRecap recap={data.previousWeek}/>}
     <div className="picks-layout"><div>
       <section className="card hero-card compact-hero"><div><p className="eyebrow">Weekly deadline</p><h2>Lock in by {data.week.lockLabel}</h2><p>The first eligible kickoff locks both picks.</p></div><div className="stat-row"><div className="stat"><span className="stat-label">Bankroll</span><span className="stat-value">{data.bankroll}</span></div><div className="stat"><span className="stat-label">Your rank</span><span className="stat-value">#{data.rank}</span></div></div></section>
@@ -61,8 +87,14 @@ function LivePicks({data}:{data:PicksPageData}){
         </section>
       </div>
       {message&&<div className={message.toLowerCase().includes("error")?"notice":"saved"}><CheckCircle2 size={20}/>{message}</div>}
-      <div className="save-picks"><p>Your split stays balanced automatically. Edit any pick until the deadline.</p><button className="primary" disabled={!valid||pending} onClick={submit}>{pending?"Saving…":data.locked?"Picks locked":"Save picks"}</button></div>
-      {data.locked&&<LockedLeaguePicks entries={data.leaguePicks}/>}
+      <div className={`autosave-bar ${saveStatus}`}>
+        {data.locked?<><CheckCircle2 size={18}/><div><b>Picks locked</b><span>Your final selections are saved.</span></div></>
+        :!signature?<><Clock3 size={18}/><div><b>Finish both picks</b><span>They&apos;ll save automatically as soon as both outcomes are selected.</span></div></>
+        :saveStatus==="error"?<><RefreshCw size={18}/><div><b>Couldn&apos;t save</b><span>{saveError}</span></div><button type="button" onClick={()=>setRetryNonce(value=>value+1)}>Retry</button></>
+        :saveStatus==="saving"||saveStatus==="waiting"?<><LoaderCircle className="spin" size={18}/><div><b>{saveStatus==="waiting"?"Changes queued":"Saving changes"}</b><span>You can keep editing.</span></div></>
+        :<><CheckCircle2 size={18}/><div><b>All changes saved</b><span>No Save button needed.</span></div></>}
+      </div>
+      {data.locked&&<LockedLeaguePicks entries={data.leaguePicks} fixtures={data.fixtures} challenges={data.weekChallenges}/>}
     </div><aside className="picks-sidebar">
       <StandingsSnapshot rows={data.standings}/>
       <div className="section-label"><h2>Challenge a mate</h2><span className="pill">{data.challengeTokens} left</span></div>
@@ -93,8 +125,24 @@ function WeeklyRecap({recap}:{recap:NonNullable<PicksPageData["previousWeek"]>})
   </section>;
 }
 
-function LockedLeaguePicks({entries}:{entries:PicksPageData["leaguePicks"]}){
-  return <section className="locked-picks"><div className="section-label"><div><p className="eyebrow">Deadline passed</p><h2>Everyone&apos;s picks</h2></div></div>
-    {entries.length?<div className="league-pick-grid">{entries.map(entry=><article className="card league-pick-card" key={entry.userId}><div className="league-pick-head"><b>{entry.name}</b>{entry.source==="auto"&&<span className="pill">Auto-picks</span>}</div>{entry.picks.sort((a,b)=>a.kind.localeCompare(b.kind)).map(p=>{const potential=Math.round((p.stake*p.odds-p.stake)*100)/100;const result=p.isCorrect===null?null:p.isCorrect?potential:-p.stake;return <div className="revealed-pick" key={p.kind}><div><small>{p.kind==="gotw"?"Game of the Week":"Own pick"}</small><b>{p.fixture}</b><span>{p.outcome.toUpperCase()} · {p.stake} pts @ {p.odds.toFixed(2)}</span></div><strong className={result!==null&&result<0?"negative":""}>{result===null?`Potential +${potential}`:`${result>0?"+":""}${result}`}</strong></div>})}</article>)}</div>:<div className="card"><p className="subtle" style={{margin:0}}>No submissions were recorded for this week.</p></div>}
+function LockedLeaguePicks({entries,fixtures,challenges}:{entries:PicksPageData["leaguePicks"];fixtures:Fixture[];challenges:PicksPageData["weekChallenges"]}){
+  return <section className="locked-picks">
+    <div className="section-label"><div><p className="eyebrow">Deadline passed</p><h2>Weekend watchboard</h2><p className="subtle watchboard-intro">See every backer grouped by match, with live scores and settled returns when available.</p></div></div>
+    {challenges.length>0&&<div className="challenge-strip">{challenges.map(challenge=><div className="challenge-matchup" key={challenge.id}><Swords size={17}/><b>{challenge.challenger}</b><span>{challenge.challengerNet===null?"—":challenge.challengerNet}</span><small>vs</small><span>{challenge.opponentNet===null?"—":challenge.opponentNet}</span><b>{challenge.opponent}</b></div>)}</div>}
+    {entries.length?<div className="watchboard-grid">{fixtures.map(fixture=>{
+      const picks=entries.flatMap(entry=>entry.picks.filter(pick=>pick.fixtureId===fixture.id).map(pick=>({...pick,userId:entry.userId,name:entry.name,source:entry.source})));
+      if(!picks.length)return null;
+      const status=fixture.status?.toLowerCase();
+      const final=status==="finished";
+      const live=status==="live"||status==="in_play"||status==="paused";
+      return <article className="card watch-fixture" key={fixture.id}>
+        <div className="fixture-head"><div><div className="teams">{fixture.home} <span className="subtle">vs</span> {fixture.away}</div><div className="kickoff">{fixture.kickoff}</div></div><span className={`match-state ${final?"final":live?"live":"scheduled"}`}>{fixture.homeScore!==null&&fixture.homeScore!==undefined?`${fixture.homeScore}–${fixture.awayScore}`:final?"Final":live?"Live":"Upcoming"}</span></div>
+        <div className="outcome-lanes">{(["home","draw","away"] as Outcome[]).map(outcome=>{
+          const backers=picks.filter(pick=>pick.outcome===outcome);
+          const label=outcome==="home"?fixture.home:outcome==="away"?fixture.away:"Draw";
+          return <div className="outcome-lane" key={outcome}><div className="outcome-lane-head"><b>{label}</b><span>{backers.length}</span></div>{backers.length?backers.map(pick=>{const potential=Math.round((pick.stake*pick.odds-pick.stake)*100)/100;const result=pick.isCorrect===null?null:pick.isCorrect?potential:-pick.stake;return <div className="watch-pick" key={`${pick.userId}-${pick.kind}`}><ClubCrest seed={pick.userId} label={pick.name} size="sm"/><div><b>{pick.name}</b><small>{pick.stake} pts · {pick.kind==="gotw"?"GOTW":"Own"}{pick.source==="auto"?" · Auto":""}</small></div><strong className={result!==null&&result<0?"negative":""}>{result===null?`+${potential}`:`${result>0?"+":""}${result}`}</strong></div>}):<p className="no-backs">No backers</p>}</div>
+        })}</div>
+      </article>;
+    })}</div>:<div className="card"><p className="subtle" style={{margin:0}}>No submissions were recorded for this week.</p></div>}
   </section>;
 }

@@ -19,7 +19,7 @@ const shortDate=(value:string)=>new Intl.DateTimeFormat("en-US",{month:"short",d
 const fullDate=(value:string)=>new Intl.DateTimeFormat("en-US",{weekday:"short",month:"short",day:"numeric"}).format(date(value));
 const lockLabel=(value:string)=>new Intl.DateTimeFormat("en-US",{weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(value));
 
-type CalendarKind="regular"|"break"|"pause"|"casino"|"finale";
+type CalendarKind="regular"|"facup"|"break"|"casino"|"finale";
 type CalendarEvent={kind:CalendarKind;label:string;detail:string};
 
 const roundDates=[
@@ -64,7 +64,10 @@ function addDateRange(start:string,end:string,event:CalendarEvent){
 addDateRange("2026-09-21","2026-10-06",{kind:"break",label:"International break",detail:"No Friday credit"});
 addDateRange("2026-11-09","2026-11-17",{kind:"break",label:"International break",detail:"No Friday credit"});
 addDateRange("2027-03-22","2027-03-30",{kind:"break",label:"International break",detail:"Ends March 30"});
-addDateRange("2027-04-03","2027-04-04",{kind:"pause",label:"FA Cup weekend",detail:"No Premier League round"});
+addDateRange("2027-01-08","2027-01-10",{kind:"facup",label:"FA Cup week",detail:"10-point credit · Third round"});
+addDateRange("2027-02-12","2027-02-14",{kind:"facup",label:"FA Cup week",detail:"10-point credit · Fourth round"});
+addDateRange("2027-03-05","2027-03-07",{kind:"facup",label:"FA Cup week",detail:"10-point credit · Fifth round"});
+addDateRange("2027-04-02","2027-04-04",{kind:"facup",label:"FA Cup week",detail:"10-point credit · Quarter-finals"});
 addDateRange("2026-12-21","2027-01-02",{kind:"casino",label:"Festive Fixture Casino",detail:"2 Friday credits · December 21-January 2"});
 addDateRange("2027-05-01","2027-05-30",{kind:"casino",label:"Final Stretch Casino",detail:"May 1 through the final match round"});
 calendarEvents.set("2027-05-30",{kind:"finale",label:"Premier League Final Day",detail:"Final Stretch Casino finale"});
@@ -72,7 +75,8 @@ calendarEvents.set("2027-06-05",{kind:"finale",label:"Champions League Final",de
 
 const regularWeekCount=Array.from(creditWeeks.keys()).filter(day=>calendarEvents.get(day)?.kind==="regular").length;
 const casinoWeekCount=Array.from(creditWeeks.keys()).filter(day=>calendarEvents.get(day)?.kind==="casino").length;
-const seasonCredits=(regularWeekCount+casinoWeekCount)*10;
+const faCupWeekCount=4;
+const seasonCredits=(regularWeekCount+casinoWeekCount+faCupWeekCount)*10;
 
 const calendarMonths=Array.from({length:11},(_,index)=>{
   const monthIndex=7+index;
@@ -108,10 +112,10 @@ export default async function Page(){
       <Link href="/competitions"><span>Season-long bets</span><b>Make your predictions</b><ChevronRight size={17}/></Link>
     </section>
 
-    <div className="calendar-heading"><div><p className="eyebrow">{regularWeekCount} regular Fridays · {casinoWeekCount} Casino Fridays · {seasonCredits} points credited</p><h2>Competition calendar</h2><p>Credits land on Fridays. Midweek Premier League rounds stay inside that week&apos;s 10-point pool.</p></div></div>
-    <div className="calendar-key" aria-label="Calendar legend"><span><i className="regular"/>10-point Friday</span><span><i className="break"/>International break</span><span><i className="pause"/>No PL round</span><span><i className="casino"/>Casino period</span><span><i className="finale"/>Finale</span></div>
+    <div className="calendar-heading"><div><p className="eyebrow">{regularWeekCount} PL · {faCupWeekCount} FA Cup · {casinoWeekCount} Casino Fridays · {seasonCredits} points</p><h2>Competition calendar</h2><p>Every purple or blue Friday adds 10 points. Midweek rounds stay inside that week&apos;s pool.</p></div></div>
+    <div className="calendar-key" aria-label="Calendar legend"><span><i className="regular"/>Premier League</span><span><i className="facup"/>FA Cup</span><span><i className="break"/>International break</span><span><i className="casino"/>Casino period</span><span><i className="finale"/>Finale</span></div>
     <section className="month-calendar-grid">{calendarMonths.map(({year,month})=><CalendarMonth key={`${year}-${month}`} year={year} month={month}/>)}</section>
-    <p className="calendar-source-note">The March international window ends March 30. April 3-4 is separately marked for the FA Cup quarter-finals; Premier League play resumes April 10. Fixture dates may move.</p>
+    <p className="calendar-source-note">FA Cup-only Fridays use the same two-pick, 10-point format as Premier League weeks. The March international window ends March 30; the Cup quarter-finals follow April 3-4.</p>
 
     <Link href="/competitions" className="card competitions-link"><span className="icon-box"><Trophy size={20}/></span><div><p className="eyebrow">The long game</p><h2>Season competitions</h2><p>Champion, Top Four, relegation, manager exit and more.</p></div><ChevronRight size={20}/></Link>
   </main></AppShell>;

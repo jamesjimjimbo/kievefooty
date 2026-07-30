@@ -2,6 +2,7 @@ export type Outcome = "home" | "draw" | "away";
 export type Fixture = {
   id: string; home: string; away: string; kickoff: string; gotw?: boolean;
   odds: Record<Outcome, number>;
+  status?: string | null; homeScore?: number | null; awayScore?: number | null;
 };
 export const currentWeek = { id:"week-4", number:4, label:"The Run-In Begins", lock:"Saturday · 10:00 AM", bankroll:42.5 };
 export const fixtures: Fixture[] = [

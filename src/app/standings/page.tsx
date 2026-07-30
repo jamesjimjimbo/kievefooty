@@ -4,7 +4,10 @@ import { StandingsBoard,type StandingPlayer } from "@/components/standings-board
 import { createClient } from "@/lib/supabase/server";
 export const metadata:Metadata={title:"Standings"};export const dynamic="force-dynamic";
 type AccuracySubmission={user_id:string;picks:{is_correct:boolean|null}[]};
-type HistoryRow={week_number:number;week_label:string;week_end:string;user_id:string;display_name:string;score:number|string};
+type HistoryRow={
+  week_number:number;week_label:string;week_end:string;user_id:string;display_name:string;
+  first_score:number|string;second_score:number|string;full_score:number|string;accuracy_correct:number|string;
+};
 export default async function Page(){
   const supabase=await createClient();if(!supabase)redirect("/auth/sign-in");
   const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/auth/sign-in");
@@ -22,6 +25,10 @@ export default async function Page(){
     const player=map.get(submission.user_id);if(!player)continue;
     for(const pick of submission.picks??[]){if(pick.is_correct===null)continue;player.accuracyTotal+=1;if(pick.is_correct)player.accuracyCorrect+=1}
   }
-  const historyRows=((historyData??[]) as HistoryRow[]).map(row=>({...row,score:Number(row.score)}));
+  const historyRows=((historyData??[]) as HistoryRow[]).map(row=>({
+    ...row,
+    first_score:Number(row.first_score),second_score:Number(row.second_score),
+    full_score:Number(row.full_score),accuracy_correct:Number(row.accuracy_correct),
+  }));
   return <StandingsBoard players={[...map.values()]} history={historyRows}/>;
 }

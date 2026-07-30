@@ -23,6 +23,6 @@ export function AppShell({children}:{children:React.ReactNode}) {
     </Link>)}</nav>;
   return <div className="app-shell"><header className="topbar"><div className="topbar-inner">
     <Link href="/picks" className="wordmark"><span className="brand-mark"><i/><i/><i/></span><span>Kieve <b>Footy</b></span></Link>
-    {navigation}<div className="top-actions"><Link className="rules-link" href="/rules"><BookOpen size={16}/><span>Rules</span></Link>{isAdmin&&<Link className="admin-link" href="/admin">Admin</Link>}<Link href="/profile" className="avatar" aria-label="Open profile">{initials}</Link></div>
+    <div className="desktop-nav">{navigation}</div><div className="top-actions"><Link className="rules-link" href="/rules"><BookOpen size={16}/><span>Rules</span></Link>{isAdmin&&<Link className="admin-link" href="/admin">Admin</Link>}<Link href="/profile" className="avatar" aria-label="Open profile">{initials}</Link></div>
   </div></header>{children}<div className="mobile-only">{navigation}</div></div>;
 }

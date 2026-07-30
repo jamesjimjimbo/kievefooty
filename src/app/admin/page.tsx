@@ -12,7 +12,7 @@ type FixtureRow={
   id:string;competition_week_id:string;kickoff_at:string;is_eligible:boolean;is_gotw:boolean;
   home:{name:string}|null;away:{name:string}|null;
 };
-type WeekRow={id:string;number:number|null;label:string;lock_at:string|null;status:string;fixtures:FixtureRow[]};
+type WeekRow={id:string;number:number|null;label:string;lock_at:string|null;status:string;competition_code:"PL"|"FAC";fixtures:FixtureRow[]};
 
 const formatDate=(value:string)=>new Intl.DateTimeFormat("en-US",{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(value));
 
@@ -25,7 +25,7 @@ export default async function Page(){
   if(!profile?.is_admin)redirect("/picks");
 
   const [{data:weekData},{count:ledger},{count:challenges},{count:players},{count:submitted},{data:latestTable}]=await Promise.all([
-    supabase.from("competition_weeks").select("id,number,label,lock_at,status,fixtures(id,competition_week_id,kickoff_at,is_eligible,is_gotw,home:teams!fixtures_home_team_id_fkey(name),away:teams!fixtures_away_team_id_fkey(name))").in("status",["draft","open","locked"]).order("start_date"),
+    supabase.from("competition_weeks").select("id,number,label,lock_at,status,competition_code,fixtures(id,competition_week_id,kickoff_at,is_eligible,is_gotw,home:teams!fixtures_home_team_id_fkey(name),away:teams!fixtures_away_team_id_fkey(name))").in("status",["draft","open","locked"]).order("start_date"),
     supabase.from("points_ledger").select("*",{count:"exact",head:true}),
     supabase.from("challenges").select("*",{count:"exact",head:true}),
     supabase.from("profiles").select("*",{count:"exact",head:true}),
@@ -46,7 +46,7 @@ export default async function Page(){
     <section className="admin-summary">{summaries.map(({label,value,Icon})=><div className="card admin-stat" key={label}><Icon size={19}/><span>{label}</span><b>{value}</b></div>)}</section>
     <section className="admin-instructions card"><span className="icon-box"><CalendarCog size={21}/></span><div><h2>How weekly game selection works</h2><p className="subtle">Mark the matches players may choose from, select exactly one Game of the Week, then set the common lock to the first eligible kickoff. Complete this before opening the week to players.</p></div></section>
     <section className="admin-weeks">{weeks.length?weeks.map(week=><article className="card admin-week" key={week.id}>
-      <header><div><p className="eyebrow">{week.number?`Competition week ${week.number}`:"Calendar item"} · {week.status}</p><h2>{week.label}</h2><p className="subtle">Current lock: {week.lock_at?formatDate(week.lock_at):"Not set"}</p></div><form action={syncLockToFirstKickoff}><input type="hidden" name="weekId" value={week.id}/><button className="secondary" type="submit"><Gauge size={16}/> Use first kickoff as lock</button></form></header>
+      <header><div><p className="eyebrow">{week.competition_code==="FAC"?"FA Cup":"Premier League"} · {week.number?`Week ${week.number}`:"Calendar item"} · {week.status}</p><h2>{week.label}</h2><p className="subtle">Current lock: {week.lock_at?formatDate(week.lock_at):"Not set"}</p></div><form action={syncLockToFirstKickoff}><input type="hidden" name="weekId" value={week.id}/><button className="secondary" type="submit"><Gauge size={16}/> Use first kickoff as lock</button></form></header>
       <div className="admin-fixtures">{[...week.fixtures].sort((a,b)=>Date.parse(a.kickoff_at)-Date.parse(b.kickoff_at)).map(fixture=><div className={`admin-fixture ${fixture.is_eligible?"eligible":""}`} key={fixture.id}>
         <div><b>{fixture.home?.name??"Home"} vs {fixture.away?.name??"Away"}</b><span>{formatDate(fixture.kickoff_at)}</span></div>
         <div className="fixture-admin-actions">

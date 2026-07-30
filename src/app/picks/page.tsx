@@ -5,9 +5,13 @@ import { createClient } from "@/lib/supabase/server";
 import type { Fixture, Outcome } from "@/lib/demo-data";
 export const metadata:Metadata={title:"Picks"};export const dynamic="force-dynamic";
 type OddsRow={home:number|string;draw:number|string;away:number|string;captured_at:string};
-type FixtureRow={id:string;kickoff_at:string;is_gotw:boolean;home:{name:string}|null;away:{name:string}|null;fixture_odds:OddsRow[]};
+type FixtureRow={id:string;kickoff_at:string;is_gotw:boolean;status:string;home_score:number|null;away_score:number|null;home:{name:string}|null;away:{name:string}|null;fixture_odds:OddsRow[]};
 type ProfileRow={id:string;display_name:string};
 type ChallengeRow={opponent_id:string};
+type WeekChallengeRow={
+  id:string;challenger_weekly_net:number|string|null;opponent_weekly_net:number|string|null;
+  challenger:{display_name:string}|null;opponent:{display_name:string}|null;
+};
 type StandingRow={user_id:string;display_name:string;score:number|string};
 type ProjectedStandingRow=StandingRow&{season_projection:number|string};
 type LeagueSubmissionRow={
@@ -27,8 +31,8 @@ export default async function PicksPage(){
   if(!week)return <PicksFlow data={null}/>;
   const locked=hasWeekLocked(week.lock_at);
   const {data:previousWeek}=await supabase.from("competition_weeks").select("id,label").eq("status","settled").eq("is_active_betting_week",true).lt("start_date",week.start_date).order("start_date",{ascending:false}).limit(1).maybeSingle();
-  const [{data:rows},{data:submission},{data:ledger},{data:profiles},{data:challenges},{data:firstStandings},{data:secondStandings},{data:overallStandings},{data:projectedStandings},{data:leagueSubmissions},{data:previousSubmissions}]=await Promise.all([
-    supabase.from("fixtures").select("id,kickoff_at,is_gotw,home:teams!fixtures_home_team_id_fkey(name),away:teams!fixtures_away_team_id_fkey(name),fixture_odds(home,draw,away,captured_at)").eq("competition_week_id",week.id).eq("is_eligible",true).order("kickoff_at"),
+  const [{data:rows},{data:submission},{data:ledger},{data:profiles},{data:challenges},{data:firstStandings},{data:secondStandings},{data:overallStandings},{data:projectedStandings},{data:leagueSubmissions},{data:previousSubmissions},{data:weekChallenges}]=await Promise.all([
+    supabase.from("fixtures").select("id,kickoff_at,is_gotw,status,home_score,away_score,home:teams!fixtures_home_team_id_fkey(name),away:teams!fixtures_away_team_id_fkey(name),fixture_odds(home,draw,away,captured_at)").eq("competition_week_id",week.id).eq("is_eligible",true).order("kickoff_at"),
     supabase.from("weekly_submissions").select("source,picks(fixture_id,kind,selected_outcome,stake)").eq("user_id",user.id).eq("competition_week_id",week.id).maybeSingle(),
     supabase.from("points_ledger").select("amount").eq("user_id",user.id),
     supabase.from("profiles").select("id,display_name").neq("id",user.id).order("display_name"),
@@ -43,11 +47,14 @@ export default async function PicksPage(){
     previousWeek
       ? supabase.from("weekly_submissions").select("user_id,profiles(display_name),picks(stake,odds,is_correct)").eq("competition_week_id",previousWeek.id)
       : Promise.resolve({data:[]}),
+    locked
+      ? supabase.from("challenges").select("id,challenger_weekly_net,opponent_weekly_net,challenger:profiles!challenges_challenger_id_fkey(display_name),opponent:profiles!challenges_opponent_id_fkey(display_name)").eq("competition_week_id",week.id)
+      : Promise.resolve({data:[]}),
   ]);
   const fixtureRows=(rows??[]) as unknown as FixtureRow[];
   const fixtures:Fixture[]=fixtureRows.map(row=>{
     const latest=[...(row.fixture_odds??[])].sort((a,b)=>Date.parse(b.captured_at)-Date.parse(a.captured_at))[0];
-    return {id:row.id,home:row.home?.name??"Home",away:row.away?.name??"Away",kickoff:new Intl.DateTimeFormat("en-US",{weekday:"short",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(row.kickoff_at)),gotw:row.is_gotw,odds:{home:Number(latest?.home??1),draw:Number(latest?.draw??1),away:Number(latest?.away??1)}};
+    return {id:row.id,home:row.home?.name??"Home",away:row.away?.name??"Away",kickoff:new Intl.DateTimeFormat("en-US",{weekday:"short",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(row.kickoff_at)),gotw:row.is_gotw,status:row.status,homeScore:row.home_score,awayScore:row.away_score,odds:{home:Number(latest?.home??1),draw:Number(latest?.draw??1),away:Number(latest?.away??1)}};
   });
   const existing=(submission?.picks??[]) as {fixture_id:string;kind:"gotw"|"own";selected_outcome:Outcome;stake:number}[];
   const standingRows=(overallStandings??[]) as StandingRow[];
@@ -67,7 +74,7 @@ export default async function PicksPage(){
     }))
     .sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
   const data:PicksPageData={
-    week:{id:week.id,number:week.number,label:week.label,lockAt:week.lock_at,lockLabel:new Intl.DateTimeFormat("en-US",{weekday:"long",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(week.lock_at))},
+    week:{id:week.id,number:week.number,label:week.label,lockAt:week.lock_at,lockLabel:new Intl.DateTimeFormat("en-US",{weekday:"long",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(week.lock_at)),competition:week.competition_code==="FAC"?"FA Cup":"Premier League"},
     bankroll:(ledger??[]).reduce((sum,row)=>sum+Number(row.amount),0),rank,fixtures,
     existing:{gotw:existing.find(p=>p.kind==="gotw"),own:existing.find(p=>p.kind==="own"),source:submission?.source},
     opponents:opponentRows.filter(p=>!used.has(p.id)),challengeTokens:Math.max(0,opponentRows.length-used.size),
@@ -84,6 +91,13 @@ export default async function PicksPage(){
         fixtureId:p.fixture_id,fixture:fixtureNames.get(p.fixture_id)??"Fixture",kind:p.kind,
         outcome:p.selected_outcome,stake:Number(p.stake),odds:Number(p.odds),isCorrect:p.is_correct,
       })),
+    })),
+    weekChallenges:((weekChallenges??[]) as unknown as WeekChallengeRow[]).map(challenge=>({
+      id:challenge.id,
+      challenger:challenge.challenger?.display_name??"Player",
+      opponent:challenge.opponent?.display_name??"Player",
+      challengerNet:challenge.challenger_weekly_net===null?null:Number(challenge.challenger_weekly_net),
+      opponentNet:challenge.opponent_weekly_net===null?null:Number(challenge.opponent_weekly_net),
     })),
     previousWeek:previousWeek&&previousResults.length>1?{
       label:previousWeek.label,
