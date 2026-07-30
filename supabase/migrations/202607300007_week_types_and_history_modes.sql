@@ -1,3 +1,5 @@
+begin;
+
 alter table public.competition_weeks
   add column if not exists competition_code text not null default 'PL'
   check (competition_code in ('PL','FAC'));
@@ -77,3 +79,5 @@ as $$
 $$;
 
 grant execute on function public.get_standings_history() to authenticated;
+
+commit;
