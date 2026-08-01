@@ -573,44 +573,87 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 
 /* Rules, profile, admin */
 .grid-2 { display: grid; gap: 14px; }
-.compact-page-head { margin-bottom: 15px; }
-.compact-page-head h1 { margin-bottom: 6px; }
-.payout-strip { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; overflow: hidden; margin-bottom: 14px; border: 1px solid var(--line); border-radius: 17px; background: var(--line); }
-.payout-strip div { min-height: 106px; display: grid; place-content: center; gap: 4px; padding: 12px; text-align: center; background: rgba(255,255,255,.96); }
-.payout-strip b { color: var(--primary); font-size: 25px; letter-spacing: -.04em; }
-.payout-strip span { color: var(--muted); font-size: 10px; font-weight: 850; }
-.payout-strip small { max-width: 170px; color: var(--muted); font-size: 8px; line-height: 1.35; }
-.weekly-credit-callout { display: grid; gap: 5px; margin-bottom: 10px; padding: 13px 16px; color: white; border-radius: 15px; background: linear-gradient(120deg,var(--primary-dark),var(--primary)); }
-.weekly-credit-callout div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
-.weekly-credit-callout b { font-size: 14px; }
-.weekly-credit-callout span { color: #d9d5ff; font-size: 9px; font-weight: 850; }
-.weekly-credit-callout p { margin: 0; color: rgba(255,255,255,.72); font-size: 9px; line-height: 1.45; }
-.rules-layout { display: grid; gap: 10px; align-items: start; }
-.rules-accordion,.season-rule-card { padding: 0; overflow: hidden; box-shadow: none; }
-.rules-section-head { min-height: 77px; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 15px 18px; border-bottom: 1px solid var(--line); }
-.rules-section-head h2,.rules-section-head .eyebrow { margin-bottom: 0; }
-.rules-section-head span { color: var(--muted); font-size: 9px; font-weight: 800; }
-.rules-accordion details { border-bottom: 1px solid var(--line); }
-.rules-accordion details:last-child { border-bottom: 0; }
-.rules-accordion summary { min-height: 66px; display: flex; align-items: center; justify-content: space-between; gap: 13px; padding: 12px 18px; cursor: pointer; list-style: none; }
-.rules-accordion summary::-webkit-details-marker { display: none; }
-.rules-accordion summary div { display: grid; gap: 3px; }
-.rules-accordion summary b { font-size: 13px; }
-.rules-accordion summary span { color: var(--muted); font-size: 10px; }
-.rules-accordion summary svg { flex: 0 0 auto; color: var(--muted); transition: transform .18s ease; }
-.rules-accordion details[open] summary svg { transform: rotate(90deg); color: var(--primary); }
-.rules-accordion details > p { margin: -2px 42px 15px 18px; color: var(--muted); font-size: 11px; line-height: 1.55; }
-.season-score-list { display: grid; }
-.season-score-list div { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 14px; min-height: 48px; padding: 9px 18px; border-bottom: 1px solid var(--line); }
-.season-score-list span { color: var(--muted); font-size: 10px; }
-.season-score-list b { max-width: 190px; text-align: right; font-size: 10px; }
-.rules-note { margin: 15px 18px 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
-.season-rule-card .rules-competition-link { margin: 14px 18px 18px; }
-.rules-grid { display: grid; gap: 12px; }
-.rule-card { display: flex; gap: 14px; box-shadow: none; }
-.rule-card h2 { margin: 2px 0 6px; font-size: 17px; }
-.rule-card p { margin: 0; font-size: 12px; }
-.icon-box { width: 40px; height: 40px; flex: 0 0 auto; display: grid; place-items: center; color: var(--primary); border-radius: 12px; background: var(--lavender); }
+.rules-page { display: grid; gap: 14px; }
+.rules-page-head { margin-bottom: 3px; }
+.rules-page-head .subtle { max-width: 680px; }
+.rules-season-map { padding: 0; overflow: hidden; }
+.rules-map-head { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 18px; border-bottom: 1px solid var(--line); }
+.rules-map-head h2,.rules-map-head .eyebrow { margin-bottom: 0; }
+.rules-map-head > span { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 10px; font-weight: 850; white-space: nowrap; }
+.rules-timeline { display: grid; padding: 14px 18px 5px; }
+.rules-phase { position: relative; min-height: 95px; display: grid; grid-template-columns: 30px 1fr; grid-template-rows: auto auto 1fr; column-gap: 11px; padding: 0 0 17px; }
+.rules-phase::after { content:""; position: absolute; width: 2px; left: 14px; top: 29px; bottom: -1px; background: var(--line); }
+.rules-phase:last-child::after { display: none; }
+.rules-phase > i { z-index: 1; grid-row: 1 / 4; width: 29px; height: 29px; display: grid; place-items: center; color: white; border: 4px solid white; border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 1px var(--line); font-size: 9px; font-style: normal; font-weight: 900; }
+.rules-phase small { color: var(--primary); font-size: 8px; font-weight: 900; letter-spacing: .07em; text-transform: uppercase; }
+.rules-phase b { margin-top: 2px; font-size: 13px; }
+.rules-phase p { max-width: 210px; margin: 3px 0 0; color: var(--muted); font-size: 9px; line-height: 1.4; }
+.rules-phase.casino > i { background: var(--coral); }
+.rules-phase.casino small { color: #d43b53; }
+.rules-phase.season > i,.rules-phase.final > i { background: var(--ink); }
+.rules-phase.season small,.rules-phase.final small { color: var(--ink); }
+.rules-map-key { display: flex; flex-wrap: wrap; gap: 13px; padding: 10px 18px 14px; border-top: 1px solid var(--line); }
+.rules-map-key span { display: flex; align-items: center; gap: 5px; color: var(--muted); font-size: 8px; font-weight: 800; }
+.rules-map-key i { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); }
+.rules-map-key i.casino { background: var(--coral); }
+.rules-map-key i.season { background: var(--ink); }
+.rules-game-lanes { display: grid; gap: 14px; }
+.rules-lane { padding: 0; overflow: hidden; box-shadow: none; }
+.rules-lane > header { min-height: 76px; display: flex; align-items: center; gap: 11px; padding: 15px 17px; border-bottom: 1px solid var(--line); }
+.rules-lane > header h2,.rules-lane > header .eyebrow { margin-bottom: 0; }
+.rules-lane > header > div { flex: 1; }
+.rules-lane > header > a { display: flex; align-items: center; color: var(--primary); font-size: 9px; font-weight: 900; }
+.rules-lane-icon { width: 39px; height: 39px; flex: 0 0 auto; display: grid; place-items: center; color: var(--primary); border-radius: 12px; background: var(--lavender); }
+.season-lane .rules-lane-icon { color: #087f72; background: var(--mint); }
+.weekly-loop { display: grid; padding: 5px 17px; }
+.weekly-loop > div { display: grid; grid-template-columns: 28px 1fr; column-gap: 9px; padding: 13px 0; }
+.weekly-loop > div + div { border-top: 1px solid var(--line); }
+.weekly-loop > div > i { grid-row: 1 / 3; width: 27px; height: 27px; display: grid; place-items: center; color: var(--primary); border-radius: 9px; background: var(--lavender); font-size: 9px; font-style: normal; font-weight: 900; }
+.weekly-loop b { font-size: 11px; }
+.weekly-loop p { margin: 3px 0 0; color: var(--muted); font-size: 9px; line-height: 1.45; }
+.weekly-loop > svg { display: none; }
+.rules-bonus-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; border-top: 1px solid var(--line); background: var(--line); }
+.rules-bonus-row span { min-width: 0; display: grid; grid-template-columns: 19px 1fr; padding: 12px; background: #fafaff; }
+.rules-bonus-row svg { grid-row: 1 / 3; color: var(--primary); }
+.rules-bonus-row b { font-size: 9px; }
+.rules-bonus-row small { margin-top: 2px; color: var(--muted); font-size: 7px; line-height: 1.35; }
+.rules-lane-intro { margin: 0; padding: 14px 17px 8px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.season-score-grid { display: grid; grid-template-columns: 1fr 1fr; padding: 5px 17px 12px; }
+.season-score-grid div { display: grid; gap: 3px; padding: 9px 5px 9px 0; border-bottom: 1px solid var(--line); }
+.season-score-grid div:nth-last-child(-n+2) { border-bottom: 0; }
+.season-score-grid span { color: var(--muted); font-size: 8px; }
+.season-score-grid b { font-size: 10px; }
+.rules-fine-print { margin: 0; padding: 11px 17px 14px; color: var(--muted); border-top: 1px solid var(--line); font-size: 8px; line-height: 1.45; }
+.rules-casino-band { display: grid; gap: 1px; overflow: hidden; color: white; border-radius: 19px; background: rgba(255,255,255,.16); box-shadow: 0 16px 38px rgba(40,29,118,.16); }
+.rules-casino-band > div { padding: 15px 17px; background: #332696; }
+.casino-band-title { display: flex; align-items: center; gap: 11px; background: #211866!important; }
+.casino-band-title .eyebrow { color: #9cebf1; margin-bottom: 3px; }
+.casino-band-title h2 { margin: 0; color: white; font-size: 18px; }
+.casino-window small { color: #9cebf1; font-size: 8px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.casino-window b { display: block; margin-top: 3px; font-size: 11px; }
+.casino-window p { margin: 3px 0 0; color: rgba(255,255,255,.68); font-size: 9px; line-height: 1.4; }
+.casino-boost { display: grid; grid-template-columns: auto 1fr; align-content: center; column-gap: 10px; background: linear-gradient(130deg,#df4058,var(--coral))!important; }
+.casino-boost b { grid-row: 1 / 3; font-size: 27px; letter-spacing: -.05em; }
+.casino-boost span { font-size: 9px; font-weight: 900; }
+.casino-boost small { color: rgba(255,255,255,.76); font-size: 8px; }
+.rules-full-formula { display: grid; gap: 14px; padding: 18px; background: linear-gradient(120deg,#fff,#f2efff); box-shadow: none; }
+.rules-full-formula h2,.rules-full-formula .eyebrow { margin-bottom: 0; }
+.rules-full-formula > p { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0; }
+.rules-full-formula > p span { padding: 7px 9px; color: var(--primary); border: 1px solid #dcd6ff; border-radius: 9px; background: white; font-size: 8px; font-weight: 850; }
+.rules-full-formula > p b { color: var(--muted); font-size: 10px; }
+.rules-standings-section { margin-top: 8px; }
+.rules-section-title { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 11px; }
+.rules-section-title h2,.rules-section-title .eyebrow { margin-bottom: 0; }
+.rules-section-title svg { color: var(--primary); }
+.rules-standings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rules-standings-grid .card { min-width: 0; display: grid; grid-template-columns: auto 1fr; align-items: start; gap: 10px; padding: 13px; box-shadow: none; }
+.rules-standings-grid .card + .card { margin-top: 0; }
+.rules-standings-grid .card > b { color: var(--primary); font-size: 21px; letter-spacing: -.05em; }
+.rules-standings-grid h3 { margin: 1px 0 1px; font-size: 11px; }
+.rules-standings-grid small { color: var(--muted); font-size: 7px; }
+.rules-standings-grid p { margin: 5px 0 0; color: var(--muted); font-size: 8px; line-height: 1.35; }
+.rules-accuracy-note { margin: 9px 2px 0; color: var(--muted); font-size: 9px; line-height: 1.5; }
+.rules-accuracy-note b { color: var(--ink); }
 .contests-card { display: grid; gap: 18px; margin-top: 18px; }
 .prize-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .prize-grid div { padding: 14px 8px; text-align: center; border-radius: 13px; background: var(--lavender); }
@@ -746,9 +789,22 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
   .roadmap-score { grid-column: auto; padding-right: 0; }
   .market-grid-later { grid-template-columns: repeat(3,1fr); }
   .prediction-market-grid { grid-template-columns: 1fr 1fr; }
-  .payout-strip { grid-template-columns: repeat(4,1fr); }
-  .rules-layout { grid-template-columns: minmax(0,1.35fr) minmax(320px,.8fr); }
-  .rules-grid { grid-template-columns: 1fr 1fr; }
+  .rules-timeline { grid-template-columns: repeat(6,1fr); padding: 24px 18px 18px; }
+  .rules-phase { min-height: 138px; display: grid; grid-template-columns: 1fr; grid-template-rows: 38px auto auto 1fr; gap: 0; padding: 0 13px 0 0; }
+  .rules-phase::after { width: auto; height: 2px; left: 28px; right: 0; top: 14px; bottom: auto; }
+  .rules-phase > i { grid-row: auto; }
+  .rules-phase p { max-width: 145px; }
+  .rules-game-lanes { grid-template-columns: 1.15fr .85fr; align-items: stretch; }
+  .weekly-loop { grid-template-columns: repeat(7,auto); align-items: start; gap: 8px; padding: 18px 17px; }
+  .weekly-loop > div { min-width: 0; display: grid; grid-template-columns: 28px 1fr; padding: 0; }
+  .weekly-loop > div + div { border-top: 0; }
+  .weekly-loop > svg { display: block; width: 13px; margin-top: 7px; color: var(--line); }
+  .rules-casino-band { grid-template-columns: 1fr 1fr 1fr .8fr; }
+  .rules-casino-band > div { min-height: 112px; display: flex; flex-direction: column; justify-content: center; }
+  .casino-band-title { flex-direction: row!important; }
+  .casino-boost { display: grid!important; }
+  .rules-full-formula { grid-template-columns: minmax(210px,.65fr) 1.35fr; align-items: center; }
+  .rules-standings-grid { grid-template-columns: repeat(4,1fr); }
   .contests-card { grid-template-columns: 1fr 1fr; align-items: center; }
   .admin-summary { grid-template-columns: repeat(4, 1fr); }
   .forecast-sync { grid-template-columns: auto 1fr auto; }
