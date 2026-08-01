@@ -52,9 +52,10 @@ export default async function PicksPage(){
       : Promise.resolve({data:[]}),
   ]);
   const fixtureRows=(rows??[]) as unknown as FixtureRow[];
+  const oddsMultiplier=week.is_casino?1+Number(week.casino_odds_boost??0.05):1;
   const fixtures:Fixture[]=fixtureRows.map(row=>{
     const latest=[...(row.fixture_odds??[])].sort((a,b)=>Date.parse(b.captured_at)-Date.parse(a.captured_at))[0];
-    return {id:row.id,home:row.home?.name??"Home",away:row.away?.name??"Away",kickoff:new Intl.DateTimeFormat("en-US",{weekday:"short",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(row.kickoff_at)),gotw:row.is_gotw,status:row.status,homeScore:row.home_score,awayScore:row.away_score,odds:{home:Number(latest?.home??1),draw:Number(latest?.draw??1),away:Number(latest?.away??1)}};
+    return {id:row.id,home:row.home?.name??"Home",away:row.away?.name??"Away",kickoff:new Intl.DateTimeFormat("en-US",{weekday:"short",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(row.kickoff_at)),gotw:row.is_gotw,status:row.status,homeScore:row.home_score,awayScore:row.away_score,odds:{home:oddsMultiplier*Number(latest?.home??1),draw:oddsMultiplier*Number(latest?.draw??1),away:oddsMultiplier*Number(latest?.away??1)}};
   });
   const existing=(submission?.picks??[]) as {fixture_id:string;kind:"gotw"|"own";selected_outcome:Outcome;stake:number}[];
   const standingRows=(overallStandings??[]) as StandingRow[];
@@ -74,7 +75,7 @@ export default async function PicksPage(){
     }))
     .sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
   const data:PicksPageData={
-    week:{id:week.id,number:week.number,label:week.label,lockAt:week.lock_at,lockLabel:new Intl.DateTimeFormat("en-US",{weekday:"long",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(week.lock_at)),competition:week.competition_code==="FAC"?"FA Cup":"Premier League"},
+    week:{id:week.id,number:week.number,label:week.label,lockAt:week.lock_at,lockLabel:new Intl.DateTimeFormat("en-US",{weekday:"long",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(week.lock_at)),competition:week.is_casino?"Casino":week.competition_code==="FAC"?"FA Cup":"Premier League"},
     bankroll:(ledger??[]).reduce((sum,row)=>sum+Number(row.amount),0),rank,fixtures,
     existing:{gotw:existing.find(p=>p.kind==="gotw"),own:existing.find(p=>p.kind==="own"),source:submission?.source},
     opponents:opponentRows.filter(p=>!used.has(p.id)),challengeTokens:Math.max(0,opponentRows.length-used.size),

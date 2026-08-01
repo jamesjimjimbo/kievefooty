@@ -32,12 +32,12 @@ const coreRules=[
   {
     title:"Standings and bonuses",
     summary:"First Half, Second Half, and Full Competition",
-    body:"Half tables count normal weekly results only. Full Competition also counts challenges, season-long results, Casinos, and bonuses. The separate 10% accuracy prize goes to the player with the most correct picks, including FA Cup and Casino picks. Three correct Games of the Week in a row earns +10; the streak then resets.",
+    body:"Half tables count normal weekly results only. Full Competition also counts challenges, season-long results, Casinos, and bonuses. The separate 10% accuracy prize goes to the player with the highest percentage of correct settled picks, including FA Cup and Casino bets. Three correct Games of the Week in a row earns +10; the streak then resets.",
   },
   {
     title:"Casino periods",
     summary:"Variable-stake windows later in the season",
-    body:"The Holiday Casino allows bets across the winter slate. The Final Stretch Casino allows variable stakes on the two weekly selections. Casino wagers cannot exceed the available balance, and details will be posted before each window.",
+    body:"The Holiday Casino allows unlimited bets across the winter slate. The Final Stretch Casino allows variable stakes on the two weekly selections. Casino odds receive a 5% boost. Total wagers cannot exceed the available balance, and details will be posted before each window.",
   },
 ];
 
@@ -47,7 +47,7 @@ const seasonScoring=[
   ["Fifth to seventh","25 each · 75 available"],
   ["Relegated clubs","50 each · 150 available"],
   ["Manager sack market","+10 sacked · −5 survives"],
-  ["Golden Boot","20-point bet at preseason odds"],
+  ["Golden Boot top three","20 per correct player · 60 available"],
   ["Second-half mover","±5 per table place"],
   ["Champions League Final","Single-match bet · details later"],
 ];
@@ -64,7 +64,7 @@ export default async function RulesPage(){
       <div><b>15%</b><span>First Half</span><small>Most points from Aug 21-Jan 2</small></div>
       <div><b>15%</b><span>Second Half</span><small>Most points from Jan 6-May 30</small></div>
       <div><b>60%</b><span>Full Competition</span><small>Total points after the June 5 UCL final</small></div>
-      <div><b>10%</b><span>Most accurate picker</span><small>Most correct picks, including Casinos</small></div>
+      <div><b>10%</b><span>Most accurate picker</span><small>Highest correct-pick percentage, including Casinos</small></div>
     </section>
 
     <section className="weekly-credit-callout">
@@ -79,7 +79,7 @@ export default async function RulesPage(){
       </section>
 
       <aside className="season-rule-card card">
-        <div className="rules-section-head"><div><p className="eyebrow">475 points available</p><h2>Season scoring</h2></div></div>
+        <div className="rules-section-head"><div><p className="eyebrow">Season-long markets</p><h2>Season scoring</h2></div></div>
         <div className="season-score-list">{seasonScoring.map(([label,value])=><div key={label}><span>{label}</span><b>{value}</b></div>)}</div>
         <p className="rules-note">For the league-position markets, exact order within Top Four, fifth-to-seventh, and relegation does not matter.</p>
         <Link className="primary rules-competition-link" href="/competitions">Make season picks</Link>

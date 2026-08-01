@@ -6,7 +6,7 @@ export const metadata:Metadata={title:"Standings"};export const dynamic="force-d
 type AccuracySubmission={user_id:string;picks:{is_correct:boolean|null}[]};
 type HistoryRow={
   week_number:number;week_label:string;week_end:string;user_id:string;display_name:string;
-  first_score:number|string;second_score:number|string;full_score:number|string;accuracy_correct:number|string;
+  first_score:number|string;second_score:number|string;full_score:number|string;accuracy_rate:number|string;
 };
 export default async function Page(){
   const supabase=await createClient();if(!supabase)redirect("/auth/sign-in");
@@ -28,7 +28,7 @@ export default async function Page(){
   const historyRows=((historyData??[]) as HistoryRow[]).map(row=>({
     ...row,
     first_score:Number(row.first_score),second_score:Number(row.second_score),
-    full_score:Number(row.full_score),accuracy_correct:Number(row.accuracy_correct),
+    full_score:Number(row.full_score),accuracy_rate:Number(row.accuracy_rate),
   }));
   return <StandingsBoard players={[...map.values()]} history={historyRows}/>;
 }
