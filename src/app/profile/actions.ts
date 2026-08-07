@@ -3,8 +3,6 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
-const allowedCrestTypes=new Map([["image/jpeg","jpg"],["image/png","png"],["image/webp","webp"]]);
-
 export async function savePlayerProfile(formData:FormData){
   const supabase=await createClient();if(!supabase)redirect("/profile?error=Supabase+is+not+configured");
   const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/auth/sign-in");
@@ -15,16 +13,6 @@ export async function savePlayerProfile(formData:FormData){
   if(displayName.length<1||displayName.length>50)redirect("/profile?error=Display+name+must+be+1+to+50+characters");
   if(bio.length>240||motto.length>80)redirect("/profile?error=Your+bio+or+motto+is+too+long");
   const changes:Record<string,string|null>={display_name:displayName,favorite_team:favoriteTeam||null,bio:bio||null,motto:motto||null,profile_completed_at:new Date().toISOString()};
-  const crest=formData.get("crest");
-  if(crest instanceof File&&crest.size>0){
-    const extension=allowedCrestTypes.get(crest.type);
-    if(!extension||crest.size>5*1024*1024)redirect("/profile?error=Use+a+JPG,+PNG,+or+WebP+under+5MB");
-    const path=`${user.id}/crest-${Date.now()}.${extension}`;
-    const {error:uploadError}=await supabase.storage.from("crests").upload(path,crest,{contentType:crest.type,upsert:false});
-    if(uploadError)redirect(`/profile?error=${encodeURIComponent(uploadError.message)}`);
-    changes.crest_url=supabase.storage.from("crests").getPublicUrl(path).data.publicUrl;
-    changes.crest_source="uploaded";
-  }
   const {error}=await supabase.from("profiles").update(changes).eq("id",user.id);
   if(error)redirect(`/profile?error=${encodeURIComponent(error.message)}`);
   revalidatePath("/profile");revalidatePath("/clubhouse");redirect("/profile?saved=1");
