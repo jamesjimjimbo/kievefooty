@@ -311,6 +311,7 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .recap-divider { height: 1px; background: rgba(255, 255, 255, .12); }
 .picks-layout { display: grid; gap: 20px; }
 .compact-hero { display: grid; gap: 12px; }
+.odds-as-of { color: var(--muted); font-size: 9px; }
 .pick-choice-grid { display: grid; gap: 10px; }
 .pick-choice { min-width: 0; }
 .pick-choice .section-label { min-height: 44px; align-items: flex-end; }
@@ -540,6 +541,8 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .market-status.open { color: #087f72; background: var(--mint); }
 .market-selection-head { display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; }
 .market-selection-head b { color: var(--ink); }
+.market-search { min-height: 38px; display: flex; align-items: center; gap: 8px; padding: 0 10px; color: var(--muted); border: 1px solid var(--line); border-radius: 11px; background: #faf9ff; }
+.market-search input { width: 100%; min-width: 0; padding: 0; border: 0; outline: 0; background: transparent; font-size: 10px; font-weight: 750; }
 .market-options { display: flex; flex-wrap: wrap; gap: 7px; max-height: 165px; overflow-y: auto; padding-right: 3px; }
 .market-option { min-height: 34px; display: flex; align-items: center; gap: 6px; padding: 0 10px; color: var(--muted); border: 1px solid var(--line); border-radius: 10px; background: white; font-size: 10px; font-weight: 800; }
 .market-option.selected { color: white; border-color: var(--primary); background: var(--primary); }

@@ -52,6 +52,9 @@ export default async function PicksPage(){
       : Promise.resolve({data:[]}),
   ]);
   const fixtureRows=(rows??[]) as unknown as FixtureRow[];
+  const latestOddsCapture=fixtureRows.flatMap(row=>row.fixture_odds??[])
+    .map(odds=>odds.captured_at)
+    .sort((a,b)=>Date.parse(b)-Date.parse(a))[0];
   const oddsMultiplier=week.is_casino?1+Number(week.casino_odds_boost??0.05):1;
   const fixtures:Fixture[]=fixtureRows.map(row=>{
     const latest=[...(row.fixture_odds??[])].sort((a,b)=>Date.parse(b.captured_at)-Date.parse(a.captured_at))[0];
@@ -75,7 +78,7 @@ export default async function PicksPage(){
     }))
     .sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
   const data:PicksPageData={
-    week:{id:week.id,number:week.number,label:week.label,lockAt:week.lock_at,lockLabel:new Intl.DateTimeFormat("en-US",{weekday:"long",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(week.lock_at)),competition:week.is_casino?"Casino":week.competition_code==="FAC"?"FA Cup":"Premier League"},
+    week:{id:week.id,number:week.number,label:week.label,lockAt:week.lock_at,lockLabel:new Intl.DateTimeFormat("en-US",{weekday:"long",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(week.lock_at)),competition:week.is_casino?"Casino":week.competition_code==="FAC"?"FA Cup":"Premier League",oddsLabel:latestOddsCapture?new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(latestOddsCapture)):undefined},
     bankroll:(ledger??[]).reduce((sum,row)=>sum+Number(row.amount),0),rank,fixtures,
     existing:{gotw:existing.find(p=>p.kind==="gotw"),own:existing.find(p=>p.kind==="own"),source:submission?.source},
     opponents:opponentRows.filter(p=>!used.has(p.id)),challengeTokens:Math.max(0,opponentRows.length-used.size),

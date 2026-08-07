@@ -8,7 +8,7 @@ import { createChallenge,saveWeeklyPicks } from "@/app/picks/actions";
 
 type ExistingPick={fixture_id:string;kind:"gotw"|"own";selected_outcome:Outcome;stake:number};
 export type PicksPageData={
-  week:{id:string;number:number;label:string;lockAt:string;lockLabel:string;competition:string};bankroll:number;rank:number;fixtures:Fixture[];
+  week:{id:string;number:number;label:string;lockAt:string;lockLabel:string;competition:string;oddsLabel?:string};bankroll:number;rank:number;fixtures:Fixture[];
   existing:{gotw?:ExistingPick;own?:ExistingPick;source?:string};opponents:{id:string;display_name:string}[];challengeTokens:number;locked:boolean;
   standings:{
     first:{id:string;name:string;score:number;me:boolean}[];
@@ -74,7 +74,7 @@ function LivePicks({data}:{data:PicksPageData}){
     <div className="picks-topline"><div><span>{data.week.competition} · Week {data.week.number}</span><b>{data.week.label}</b></div><span className={`pill ${data.locked?"":"live"}`}><Clock3 size={13}/>{data.locked?"Locked":"Open"}</span></div>
     {data.previousWeek&&<WeeklyRecap recap={data.previousWeek}/>}
     <div className="picks-layout"><div>
-      <section className="card hero-card compact-hero"><div><p className="eyebrow">Weekly deadline</p><h2>Lock in by {data.week.lockLabel}</h2><p>The first eligible kickoff locks both picks.</p></div><div className="stat-row"><div className="stat"><span className="stat-label">Bankroll</span><span className="stat-value">{data.bankroll}</span></div><div className="stat"><span className="stat-label">Your rank</span><span className="stat-value">#{data.rank}</span></div></div></section>
+      <section className="card hero-card compact-hero"><div><p className="eyebrow">Weekly deadline</p><h2>Lock in by {data.week.lockLabel}</h2><p>The first eligible kickoff locks both picks.{data.week.oddsLabel&&<span className="odds-as-of"> Odds captured {data.week.oddsLabel}; your saved price is locked with your pick.</span>}</p></div><div className="stat-row"><div className="stat"><span className="stat-label">Bankroll</span><span className="stat-value">{data.bankroll}</span></div><div className="stat"><span className="stat-label">Your rank</span><span className="stat-value">#{data.rank}</span></div></div></section>
       <div className="pick-choice-grid">
         <section className="pick-choice">
           <div className="section-label"><div><p className="eyebrow">Required</p><h2>Game of the Week</h2></div><ShieldQuestion size={21}/></div>
