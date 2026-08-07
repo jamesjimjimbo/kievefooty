@@ -1,15 +1,18 @@
 "use client";
 import { useEffect,useRef,useState,useTransition } from "react";
-import { CheckCircle2,Clock3,LoaderCircle,RefreshCw,ShieldQuestion,Swords } from "lucide-react";
+import { CheckCircle2,Clock3,LoaderCircle,LockKeyhole,MessageCircle,RefreshCw,ShieldQuestion,Swords } from "lucide-react";
 import type { Fixture,Outcome } from "@/lib/demo-data";
 import { AppShell } from "@/components/app-shell";
 import { ClubCrest } from "@/components/club-crest";
-import { createChallenge,saveWeeklyPicks } from "@/app/picks/actions";
+import { WeeklyConversations } from "@/components/weekly-conversations";
+import { createChallenge,saveWeeklyComment,saveWeeklyPicks } from "@/app/picks/actions";
+import type { WeeklyConversation } from "@/lib/weekly-conversations";
 
 type ExistingPick={fixture_id:string;kind:"gotw"|"own";selected_outcome:Outcome;stake:number};
 export type PicksPageData={
   week:{id:string;number:number;label:string;lockAt:string;lockLabel:string;competition:string;oddsLabel?:string};bankroll:number;rank:number;fixtures:Fixture[];
-  existing:{gotw?:ExistingPick;own?:ExistingPick;source?:string};opponents:{id:string;display_name:string}[];challengeTokens:number;locked:boolean;
+  existing:{gotw?:ExistingPick;own?:ExistingPick;source?:string;commentary?:string};opponents:{id:string;display_name:string}[];challengeTokens:number;locked:boolean;
+  currentUserId:string;conversations:WeeklyConversation[];
   standings:{
     first:{id:string;name:string;score:number;me:boolean}[];
     second:{id:string;name:string;score:number;me:boolean}[];
@@ -44,6 +47,7 @@ function LivePicks({data}:{data:PicksPageData}){
   const [saveError,setSaveError]=useState("");
   const [retryNonce,setRetryNonce]=useState(0);
   const [opponent,setOpponent]=useState(data.opponents[0]?.id??"");const [pending,startTransition]=useTransition();
+  const [comment,setComment]=useState(data.existing.commentary??"");const [commentMessage,setCommentMessage]=useState("");const [commentPending,startCommentTransition]=useTransition();
   const other=others.find(f=>f.id===otherId);const total=gotwStake+otherStake;
   const signature=gotwPick&&otherPick&&other&&total===10
     ?`${gotw.id}:${gotwPick}:${gotwStake}|${other.id}:${otherPick}:${otherStake}`
@@ -54,6 +58,7 @@ function LivePicks({data}:{data:PicksPageData}){
   const lastSaved=useRef(initialSignature);
   const adjustGotw=(n:number)=>{setMessage("");setGotwStake(n);setOtherStake(10-n)};const adjustOther=(n:number)=>{setMessage("");setOtherStake(n);setGotwStake(10-n)};
   const challenge=()=>startTransition(async()=>{if(!opponent)return;const result=await createChallenge({weekId:data.week.id,opponentId:opponent});setMessage(result.error??"Challenge sent. No acceptance needed.")});
+  const saveComment=()=>startCommentTransition(async()=>{setCommentMessage("");const result=await saveWeeklyComment({weekId:data.week.id,comment});setCommentMessage(result.error??(comment.trim()?"Statement saved. It stays hidden until lock.":"Statement removed."))});
   useEffect(()=>{
     if(data.locked||!signature||signature===lastSaved.current)return;
     setSaveStatus("waiting");setSaveError("");
@@ -95,6 +100,8 @@ function LivePicks({data}:{data:PicksPageData}){
         :saveStatus==="saving"||saveStatus==="waiting"?<><LoaderCircle className="spin" size={18}/><div><b>{saveStatus==="waiting"?"Changes queued":"Saving changes"}</b><span>You can keep editing.</span></div></>
         :<><CheckCircle2 size={18}/><div><b>All changes saved</b><span>No Save button needed.</span></div></>}
       </div>
+      {!data.locked&&<section className="card weekly-comment-editor"><div className="weekly-comment-head"><div><p className="eyebrow"><MessageCircle size={14}/> Optional</p><h2>Explain your picks—or talk some shit</h2></div><span className="pill"><LockKeyhole size={13}/> Hidden until lock</span></div><textarea value={comment} onChange={event=>{setComment(event.target.value);setCommentMessage("")}} maxLength={180} rows={3} placeholder="180 characters. Confidence encouraged; evidence optional."/><div className="comment-editor-foot"><span className="character-count">{comment.length}/180</span><button type="button" className="secondary" onClick={saveComment} disabled={commentPending||saveStatus!=="saved"}>{commentPending?"Saving…":"Save statement"}</button></div>{saveStatus!=="saved"&&<p className="microcopy">Finish your two picks first, then add your statement.</p>}{commentMessage&&<p className={commentMessage.toLowerCase().includes("saved")||commentMessage.toLowerCase().includes("removed")?"form-success":"form-error"}>{commentMessage}</p>}</section>}
+      {data.locked&&<section className="locked-conversations"><div className="section-label"><div><p className="eyebrow">Embargo lifted</p><h2>Pre-match statements</h2><p className="subtle">React or reply now that everyone&apos;s picks are locked.</p></div></div><WeeklyConversations threads={data.conversations} currentUserId={data.currentUserId} compact/></section>}
       {data.locked&&<LockedLeaguePicks entries={data.leaguePicks} fixtures={data.fixtures} challenges={data.weekChallenges}/>}
     </div><aside className="picks-sidebar">
       <StandingsSnapshot rows={data.standings}/>

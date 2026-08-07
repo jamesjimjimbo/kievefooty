@@ -24,3 +24,12 @@ export async function createChallenge(input:{weekId:string;opponentId:string}){
   if(error)return {error:error.message};
   revalidatePath("/picks");return {success:true};
 }
+
+export async function saveWeeklyComment(input:{weekId:string;comment:string}){
+  const comment=input.comment.trim();if(comment.length>180)return {error:"Keep it to 180 characters or fewer"};
+  const supabase=await createClient();if(!supabase)return {error:"Supabase is not configured"};
+  const {data:{user}}=await supabase.auth.getUser();if(!user)return {error:"Please sign in again"};
+  const {error}=await supabase.rpc("set_weekly_comment",{p_week_id:input.weekId,p_comment:comment});
+  if(error)return {error:error.message};
+  revalidatePath("/picks");revalidatePath("/clubhouse");return {success:true};
+}
