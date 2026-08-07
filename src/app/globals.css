@@ -268,7 +268,7 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .club-crest-sm { width: 34px; height: 34px; border-radius: 11px 11px 15px 15px; font-size: 34px; }
 .club-crest-md { width: 42px; height: 42px; border-radius: 13px 13px 18px 18px; font-size: 42px; }
 .club-crest-lg { width: 68px; height: 68px; border-radius: 19px 19px 27px 27px; font-size: 68px; }
-.club-crest-custom { background-position: center; background-size: cover; }
+.club-crest.club-crest-custom { background-position: center; background-size: cover; background-repeat: no-repeat; }
 .club-crest-custom::before,.club-crest-custom i,.club-crest-custom b { display: none; }
 .crest-1 { background: linear-gradient(145deg, #3928ba, #8664ff); }
 .crest-1::before { background: var(--orange); }
