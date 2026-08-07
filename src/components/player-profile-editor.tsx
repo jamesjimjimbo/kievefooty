@@ -56,7 +56,7 @@ export function PlayerProfileEditor(props:ProfileEditorProps){
     <form action={savePlayerProfile} className="card profile-form">
       <div><p className="eyebrow">Player identity</p><h2>Make it yours</h2><p className="subtle">This is what everyone sees in the Clubhouse.</p></div>
       <label className="field"><span>Club name</span><input name="display_name" defaultValue={props.displayName} maxLength={50} required/></label>
-      <label className="field"><span>Favorite club</span><select name="favorite_team" defaultValue={props.favoriteTeam}><option value="">No allegiance declared</option>{props.teams.map(team=><option key={team}>{team}</option>)}</select></label>
+      <label className="field"><span>Favorite club</span><select name="favorite_team" defaultValue={props.favoriteTeam}><option value="">No allegiance declared</option>{props.teams.filter(team=>team!=="West Ham*").map(team=><option key={team}>{team}</option>)}<option disabled>──────────</option><option value="West Ham*">West Ham*</option></select></label>
       <label className="field"><span>Short bio</span><textarea name="bio" defaultValue={props.bio} maxLength={240} rows={4} placeholder="How you know the group, your football credentials, or your greatest delusion."/></label>
       <label className="field"><span>Club motto <small>(optional)</small></span><input name="motto" defaultValue={props.motto} maxLength={80} placeholder="Football heritage, allegedly"/></label>
       <button className="primary">Save player card</button>
