@@ -330,6 +330,11 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .fixture-select { margin-bottom: 13px; box-shadow: none; background: #f9f8ff; }
 .pick-choice .fixture-select { margin-bottom: 10px; }
 .pick-choice .fixture-select select { min-width: 0; padding: 0 8px; font-size: 10px; }
+.fixed-fixture-select { min-height: 80px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fixed-fixture-select > div { min-width: 0; display: grid; gap: 8px; }
+.fixed-fixture-select > div span { color: var(--ink); font-size: 12px; font-weight: 800; }
+.fixed-fixture-select > div b { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.fixed-fixture-select .pill { color: var(--primary); border-color: #d7d0ff; background: white; }
 .autosave-bar {
   display: grid;
   grid-template-columns: auto 1fr auto;
