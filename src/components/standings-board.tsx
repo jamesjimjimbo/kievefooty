@@ -4,7 +4,7 @@ import {AppShell} from "./app-shell";
 import {ClubCrest} from "./club-crest";
 
 export type StandingPlayer={
-  id:string;name:string;initials:string;first:number;second:number;overall:number;
+  id:string;name:string;crestUrl:string|null;initials:string;first:number;second:number;overall:number;
   projected:number;seasonProjection:number;accuracyCorrect:number;accuracyTotal:number;me:boolean;
 };
 export type StandingHistoryRow={
@@ -31,7 +31,7 @@ function CompetitionHeader({title,prize,description}:{title:string;prize:string;
 }
 
 function PlayerCell({player}:{player:StandingPlayer}){
-  return <span className="player"><ClubCrest seed={player.id} label={player.name} size="sm"/><span>{player.name}{player.me&&<small className="you-label">You</small>}</span></span>;
+  return <span className="player"><ClubCrest seed={player.id} label={player.name} imageUrl={player.crestUrl} size="sm"/><span>{player.name}{player.me&&<small className="you-label">You</small>}</span></span>;
 }
 
 function ScoreCompetition({title,prize,description,players,scoreKey}:{title:string;prize:string;description:string;players:StandingPlayer[];scoreKey:"first"|"second"}){

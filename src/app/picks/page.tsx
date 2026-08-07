@@ -7,7 +7,7 @@ import type { WeeklyConversation,WeeklyReaction } from "@/lib/weekly-conversatio
 export const metadata:Metadata={title:"Picks"};export const dynamic="force-dynamic";
 type OddsRow={home:number|string;draw:number|string;away:number|string;captured_at:string};
 type FixtureRow={id:string;kickoff_at:string;is_gotw:boolean;status:string;home_score:number|null;away_score:number|null;home:{name:string}|null;away:{name:string}|null;fixture_odds:OddsRow[]};
-type ProfileRow={id:string;display_name:string};
+type ProfileRow={id:string;display_name:string;crest_url:string|null};
 type ChallengeRow={opponent_id:string};
 type WeekChallengeRow={
   id:string;challenger_weekly_net:number|string|null;opponent_weekly_net:number|string|null;
@@ -22,7 +22,7 @@ type LeagueSubmissionRow={
 type ReactionRow={submission_id:string;user_id:string;reaction:WeeklyReaction};
 type ReplyRow={id:string;submission_id:string;user_id:string;body:string;created_at:string;profiles:{display_name:string;crest_url:string|null}|null};
 type PreviousSubmissionRow={
-  user_id:string;profiles:{display_name:string}|null;
+  user_id:string;profiles:{display_name:string;crest_url:string|null}|null;
   picks:{stake:number|string;odds:number|string;is_correct:boolean|null}[];
 };
 function hasWeekLocked(lockAt:string){return new Date().getTime()>=Date.parse(lockAt)}
@@ -38,7 +38,7 @@ export default async function PicksPage(){
     supabase.from("fixtures").select("id,kickoff_at,is_gotw,status,home_score,away_score,home:teams!fixtures_home_team_id_fkey(name),away:teams!fixtures_away_team_id_fkey(name),fixture_odds(home,draw,away,captured_at)").eq("competition_week_id",week.id).eq("is_eligible",true).order("kickoff_at"),
     supabase.from("weekly_submissions").select("source,commentary,picks(fixture_id,kind,selected_outcome,stake)").eq("user_id",user.id).eq("competition_week_id",week.id).maybeSingle(),
     supabase.from("points_ledger").select("amount").eq("user_id",user.id),
-    supabase.from("profiles").select("id,display_name").neq("id",user.id).order("display_name"),
+    supabase.from("profiles").select("id,display_name,crest_url").order("display_name"),
     supabase.from("challenges").select("opponent_id").eq("challenger_id",user.id),
     supabase.rpc("get_standings",{p_half:"first"}),
     supabase.rpc("get_standings",{p_half:"second"}),
@@ -48,7 +48,7 @@ export default async function PicksPage(){
       ? supabase.from("weekly_submissions").select("id,user_id,source,commentary,profiles(display_name,crest_url),picks(fixture_id,kind,selected_outcome,stake,odds,is_correct)").eq("competition_week_id",week.id)
       : Promise.resolve({data:[]}),
     previousWeek
-      ? supabase.from("weekly_submissions").select("user_id,profiles(display_name),picks(stake,odds,is_correct)").eq("competition_week_id",previousWeek.id)
+      ? supabase.from("weekly_submissions").select("user_id,profiles(display_name,crest_url),picks(stake,odds,is_correct)").eq("competition_week_id",previousWeek.id)
       : Promise.resolve({data:[]}),
     locked
       ? supabase.from("challenges").select("id,challenger_weekly_net,opponent_weekly_net,challenger:profiles!challenges_challenger_id_fkey(display_name),opponent:profiles!challenges_opponent_id_fkey(display_name)").eq("competition_week_id",week.id)
@@ -79,12 +79,14 @@ export default async function PicksPage(){
   const standingRows=(overallStandings??[]) as StandingRow[];
   const rank=Math.max(1,standingRows.findIndex(row=>row.user_id===user.id)+1);
   const used=new Set(((challenges??[]) as ChallengeRow[]).map(c=>c.opponent_id));
-  const opponentRows=(profiles??[]) as ProfileRow[];
+  const profileRows=(profiles??[]) as ProfileRow[];const crestMap=new Map(profileRows.map(profile=>[profile.id,profile.crest_url]));
+  const opponentRows=profileRows.filter(profile=>profile.id!==user.id);
   const fixtureNames=new Map(fixtures.map(f=>[f.id,`${f.home} vs ${f.away}`]));
   const previousResults=((previousSubmissions??[]) as unknown as PreviousSubmissionRow[])
     .map(row=>({
       id:row.user_id,
       name:row.profiles?.display_name??"Player",
+      crestUrl:row.profiles?.crest_url??null,
       score:Math.round(row.picks.reduce((sum,pick)=>{
         if(pick.is_correct===null)return sum;
         const stake=Number(pick.stake);
@@ -100,13 +102,13 @@ export default async function PicksPage(){
     opponents:opponentRows.filter(p=>!used.has(p.id)),challengeTokens:Math.max(0,opponentRows.length-used.size),
     locked,
     standings:{
-      first:((firstStandings??[]) as StandingRow[]).map(row=>({id:row.user_id,name:row.display_name,score:Number(row.score),me:row.user_id===user.id})),
-      second:((secondStandings??[]) as StandingRow[]).map(row=>({id:row.user_id,name:row.display_name,score:Number(row.score),me:row.user_id===user.id})),
-      overall:standingRows.map(row=>({id:row.user_id,name:row.display_name,score:Number(row.score),me:row.user_id===user.id})),
-      projected:((projectedStandings??overallStandings??[]) as ProjectedStandingRow[]).map(row=>({id:row.user_id,name:row.display_name,score:Number(row.score),me:row.user_id===user.id,seasonProjection:Number(row.season_projection??0)})),
+      first:((firstStandings??[]) as StandingRow[]).map(row=>({id:row.user_id,name:row.display_name,crestUrl:crestMap.get(row.user_id)??null,score:Number(row.score),me:row.user_id===user.id})),
+      second:((secondStandings??[]) as StandingRow[]).map(row=>({id:row.user_id,name:row.display_name,crestUrl:crestMap.get(row.user_id)??null,score:Number(row.score),me:row.user_id===user.id})),
+      overall:standingRows.map(row=>({id:row.user_id,name:row.display_name,crestUrl:crestMap.get(row.user_id)??null,score:Number(row.score),me:row.user_id===user.id})),
+      projected:((projectedStandings??overallStandings??[]) as ProjectedStandingRow[]).map(row=>({id:row.user_id,name:row.display_name,crestUrl:crestMap.get(row.user_id)??null,score:Number(row.score),me:row.user_id===user.id,seasonProjection:Number(row.season_projection??0)})),
     },
     leaguePicks:leagueRows.map(row=>({
-      userId:row.user_id,name:row.profiles?.display_name??"Player",source:row.source,
+      userId:row.user_id,name:row.profiles?.display_name??"Player",crestUrl:row.profiles?.crest_url??null,source:row.source,
       picks:row.picks.map(p=>({
         fixtureId:p.fixture_id,fixture:fixtureNames.get(p.fixture_id)??"Fixture",kind:p.kind,
         outcome:p.selected_outcome,stake:Number(p.stake),odds:Number(p.odds),isCorrect:p.is_correct,

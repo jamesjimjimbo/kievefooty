@@ -14,14 +14,14 @@ export type PicksPageData={
   existing:{gotw?:ExistingPick;own?:ExistingPick;source?:string;commentary?:string};opponents:{id:string;display_name:string}[];challengeTokens:number;locked:boolean;
   currentUserId:string;conversations:WeeklyConversation[];
   standings:{
-    first:{id:string;name:string;score:number;me:boolean}[];
-    second:{id:string;name:string;score:number;me:boolean}[];
-    overall:{id:string;name:string;score:number;me:boolean}[];
-    projected:{id:string;name:string;score:number;me:boolean;seasonProjection:number}[];
+    first:{id:string;name:string;crestUrl:string|null;score:number;me:boolean}[];
+    second:{id:string;name:string;crestUrl:string|null;score:number;me:boolean}[];
+    overall:{id:string;name:string;crestUrl:string|null;score:number;me:boolean}[];
+    projected:{id:string;name:string;crestUrl:string|null;score:number;me:boolean;seasonProjection:number}[];
   };
-  leaguePicks:{userId:string;name:string;source:"manual"|"auto";picks:{fixtureId:string;fixture:string;kind:"gotw"|"own";outcome:Outcome;stake:number;odds:number;isCorrect:boolean|null}[]}[];
+  leaguePicks:{userId:string;name:string;crestUrl:string|null;source:"manual"|"auto";picks:{fixtureId:string;fixture:string;kind:"gotw"|"own";outcome:Outcome;stake:number;odds:number;isCorrect:boolean|null}[]}[];
   weekChallenges:{id:string;challenger:string;opponent:string;challengerNet:number|null;opponentNet:number|null}[];
-  previousWeek?:{label:string;winner:{id:string;name:string;score:number};loser:{id:string;name:string;score:number}};
+  previousWeek?:{label:string;winner:{id:string;name:string;crestUrl:string|null;score:number};loser:{id:string;name:string;crestUrl:string|null;score:number}};
 };
 
 function FixtureCard({fixture,selection,onSelect,stake,setStake,label,disabled}:{fixture:Fixture;selection?:Outcome;onSelect:(o:Outcome)=>void;stake:number;setStake:(n:number)=>void;label?:string;disabled?:boolean}) {
@@ -120,16 +120,16 @@ function StandingsSnapshot({rows}:{rows:PicksPageData["standings"]}){
     <div className="home-standing-controls"><div className="mini-segments" aria-label="Standings period">{([["first","First"],["second","Second"],["overall","Full"]] as const).map(([value,label])=><button type="button" key={value} onClick={()=>{setTab(value);if(value!=="overall")setProject(false)}} className={tab===value?"active":""}>{label}</button>)}</div>
     {tab==="overall"&&<label className="projection-toggle"><input type="checkbox" checked={project} onChange={event=>setProject(event.target.checked)}/><span/><b>Include season bets</b></label>}</div>
     {tab==="overall"&&project&&<p className="projection-note">Assumes today&apos;s league and market results are final.</p>}
-    <div className="card table compact-table">{top.map((row,index)=><div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><span className="player"><ClubCrest seed={row.id} label={row.name} size="sm"/><span>{row.name}{row.me&&<small className="you-label">You</small>}</span></span><span className="points">{row.score>0?"+":""}{row.score}</span></div>)}</div>
+    <div className="card table compact-table">{top.map((row,index)=><div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><span className="player"><ClubCrest seed={row.id} label={row.name} imageUrl={row.crestUrl} size="sm"/><span>{row.name}{row.me&&<small className="you-label">You</small>}</span></span><span className="points">{row.score>0?"+":""}{row.score}</span></div>)}</div>
   </section>;
 }
 
 function WeeklyRecap({recap}:{recap:NonNullable<PicksPageData["previousWeek"]>}){
   return <section className="weekly-recap">
     <div className="recap-intro"><span>Glory &amp; grief</span><b>{recap.label}</b></div>
-    <div className="recap-player winner"><ClubCrest seed={recap.winner.id} label={recap.winner.name}/><div><small>Last week&apos;s winner</small><b>{recap.winner.name}</b></div><strong>{recap.winner.score>0?"+":""}{recap.winner.score}</strong></div>
+    <div className="recap-player winner"><ClubCrest seed={recap.winner.id} label={recap.winner.name} imageUrl={recap.winner.crestUrl}/><div><small>Last week&apos;s winner</small><b>{recap.winner.name}</b></div><strong>{recap.winner.score>0?"+":""}{recap.winner.score}</strong></div>
     <div className="recap-divider"/>
-    <div className="recap-player loser"><ClubCrest seed={recap.loser.id} label={recap.loser.name}/><div><small>Form guide enthusiast</small><b>{recap.loser.name}</b></div><span>The model remains confident.</span></div>
+    <div className="recap-player loser"><ClubCrest seed={recap.loser.id} label={recap.loser.name} imageUrl={recap.loser.crestUrl}/><div><small>Form guide enthusiast</small><b>{recap.loser.name}</b></div><span>The model remains confident.</span></div>
   </section>;
 }
 
@@ -138,7 +138,7 @@ function LockedLeaguePicks({entries,fixtures,challenges}:{entries:PicksPageData[
     <div className="section-label"><div><p className="eyebrow">Deadline passed</p><h2>Weekend watchboard</h2><p className="subtle watchboard-intro">See every backer grouped by match, with live scores and settled returns when available.</p></div></div>
     {challenges.length>0&&<div className="challenge-strip">{challenges.map(challenge=><div className="challenge-matchup" key={challenge.id}><Swords size={17}/><b>{challenge.challenger}</b><span>{challenge.challengerNet===null?"—":challenge.challengerNet}</span><small>vs</small><span>{challenge.opponentNet===null?"—":challenge.opponentNet}</span><b>{challenge.opponent}</b></div>)}</div>}
     {entries.length?<div className="watchboard-grid">{fixtures.map(fixture=>{
-      const picks=entries.flatMap(entry=>entry.picks.filter(pick=>pick.fixtureId===fixture.id).map(pick=>({...pick,userId:entry.userId,name:entry.name,source:entry.source})));
+      const picks=entries.flatMap(entry=>entry.picks.filter(pick=>pick.fixtureId===fixture.id).map(pick=>({...pick,userId:entry.userId,name:entry.name,crestUrl:entry.crestUrl,source:entry.source})));
       if(!picks.length)return null;
       const status=fixture.status?.toLowerCase();
       const final=status==="finished";
@@ -148,7 +148,7 @@ function LockedLeaguePicks({entries,fixtures,challenges}:{entries:PicksPageData[
         <div className="outcome-lanes">{(["home","draw","away"] as Outcome[]).map(outcome=>{
           const backers=picks.filter(pick=>pick.outcome===outcome);
           const label=outcome==="home"?fixture.home:outcome==="away"?fixture.away:"Draw";
-          return <div className="outcome-lane" key={outcome}><div className="outcome-lane-head"><b>{label}</b><span>{backers.length}</span></div>{backers.length?backers.map(pick=>{const potential=Math.round((pick.stake*pick.odds-pick.stake)*100)/100;const result=pick.isCorrect===null?null:pick.isCorrect?potential:-pick.stake;return <div className="watch-pick" key={`${pick.userId}-${pick.kind}`}><ClubCrest seed={pick.userId} label={pick.name} size="sm"/><div><b>{pick.name}</b><small>{pick.stake} pts · {pick.kind==="gotw"?"GOTW":"Own"}{pick.source==="auto"?" · Auto":""}</small></div><strong className={result!==null&&result<0?"negative":""}>{result===null?`+${potential}`:`${result>0?"+":""}${result}`}</strong></div>}):<p className="no-backs">No backers</p>}</div>
+          return <div className="outcome-lane" key={outcome}><div className="outcome-lane-head"><b>{label}</b><span>{backers.length}</span></div>{backers.length?backers.map(pick=>{const potential=Math.round((pick.stake*pick.odds-pick.stake)*100)/100;const result=pick.isCorrect===null?null:pick.isCorrect?potential:-pick.stake;return <div className="watch-pick" key={`${pick.userId}-${pick.kind}`}><ClubCrest seed={pick.userId} label={pick.name} imageUrl={pick.crestUrl} size="sm"/><div><b>{pick.name}</b><small>{pick.stake} pts · {pick.kind==="gotw"?"GOTW":"Own"}{pick.source==="auto"?" · Auto":""}</small></div><strong className={result!==null&&result<0?"negative":""}>{result===null?`+${potential}`:`${result>0?"+":""}${result}`}</strong></div>}):<p className="no-backs">No backers</p>}</div>
         })}</div>
       </article>;
     })}</div>:<div className="card"><p className="subtle" style={{margin:0}}>No submissions were recorded for this week.</p></div>}

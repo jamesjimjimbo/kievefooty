@@ -11,9 +11,12 @@ type ProfileEditorProps={
 };
 
 const crestSize=1024;
+const directUploadTypes=new Map([["image/jpeg","jpg"],["image/png","png"],["image/webp","webp"]]);
 
 async function normalizeCrest(file:File){
   if(file.size>20*1024*1024)throw new Error("That photo is too large. Choose one under 20MB.");
+  const directExtension=directUploadTypes.get(file.type);
+  if(directExtension&&file.size<=4.5*1024*1024)return {blob:file,contentType:file.type,extension:directExtension};
   const sourceUrl=URL.createObjectURL(file);
   try{
     const image=await new Promise<HTMLImageElement>((resolve,reject)=>{
@@ -23,9 +26,12 @@ async function normalizeCrest(file:File){
     const canvas=document.createElement("canvas");canvas.width=crestSize;canvas.height=crestSize;
     const context=canvas.getContext("2d");if(!context)throw new Error("Your browser could not prepare this photo.");
     context.drawImage(image,left,top,side,side,0,0,crestSize,crestSize);
-    const blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/webp",.84));
+    let blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/png"));
     if(!blob)throw new Error("Your browser could not resize this photo.");
-    return blob;
+    if(blob.size<=4.5*1024*1024)return {blob,contentType:"image/png",extension:"png"};
+    blob=await new Promise<Blob|null>(resolve=>canvas.toBlob(resolve,"image/jpeg",.88));
+    if(!blob)throw new Error("Your browser could not resize this photo.");
+    return {blob,contentType:"image/jpeg",extension:"jpg"};
   }finally{URL.revokeObjectURL(sourceUrl)}
 }
 
@@ -37,8 +43,8 @@ export function PlayerProfileEditor(props:ProfileEditorProps){
     try{
       const crest=await normalizeCrest(file);const supabase=createClient();
       const {data:{user}}=await supabase.auth.getUser();if(!user||user.id!==props.userId)throw new Error("Please sign in again.");
-      const path=`${user.id}/crest-${Date.now()}.webp`;
-      const {error:uploadError}=await supabase.storage.from("crests").upload(path,crest,{contentType:"image/webp",upsert:false});
+      const path=`${user.id}/crest-${Date.now()}.${crest.extension}`;
+      const {error:uploadError}=await supabase.storage.from("crests").upload(path,crest.blob,{contentType:crest.contentType,upsert:false});
       if(uploadError)throw uploadError;
       const url=supabase.storage.from("crests").getPublicUrl(path).data.publicUrl;
       const {error:updateError}=await supabase.from("profiles").update({crest_url:url,crest_source:"uploaded",profile_completed_at:new Date().toISOString()}).eq("id",user.id);
