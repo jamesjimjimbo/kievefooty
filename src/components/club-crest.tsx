@@ -1,7 +1,9 @@
+import Image from "next/image";
+
 type ClubCrestProps = {
   seed: string;
   label?: string;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
   imageUrl?: string | null;
 };
 
@@ -21,8 +23,8 @@ export function ClubCrest({ seed, label, size = "md", imageUrl }: ClubCrestProps
     <span
       className={`club-crest club-crest-${size} crest-${crestVariant(seed)}${imageUrl ? " club-crest-custom" : ""}`}
       aria-label={`${label ?? "Club"} crest`}
-      style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}
     >
+      {imageUrl&&<Image src={imageUrl} alt="" fill sizes={size==="xl"?"144px":size==="lg"?"92px":size==="md"?"42px":"34px"}/>}
       <i />
       <b>{initials}</b>
     </span>

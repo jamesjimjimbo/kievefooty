@@ -1,5 +1,6 @@
 "use client";
 import { FormEvent, useState, useTransition } from "react";
+import Link from "next/link";
 import { MessageCircle, Send } from "lucide-react";
 import { addCommentReply, toggleCommentReaction } from "@/app/clubhouse/actions";
 import { ClubCrest } from "@/components/club-crest";
@@ -17,10 +18,10 @@ function ConversationCard({thread,currentUserId}:{thread:WeeklyConversation;curr
   const react=(reaction:WeeklyReaction)=>startTransition(async()=>{setError("");const result=await toggleCommentReaction({submissionId:thread.submissionId,reaction});if(result.error)setError(result.error)});
   const submit=(event:FormEvent)=>{event.preventDefault();if(!reply.trim())return;startTransition(async()=>{setError("");const result=await addCommentReply({submissionId:thread.submissionId,body:reply});if(result.error)setError(result.error);else setReply("")})};
   return <article className="card conversation-card">
-    <header><ClubCrest seed={thread.userId} label={thread.name} imageUrl={thread.crestUrl} size="md"/><div><b>{thread.name}</b><span>Pre-match statement</span></div></header>
+    <header><Link href={`/players/${thread.userId}`}><ClubCrest seed={thread.userId} label={thread.name} imageUrl={thread.crestUrl} size="md"/></Link><div><Link className="player-name-link" href={`/players/${thread.userId}`}>{thread.name}</Link><span>Pre-match statement</span></div></header>
     <blockquote>{thread.commentary}</blockquote>
     <div className="reaction-row">{reactions.map(item=>{const count=thread.reactions.filter(row=>row.reaction===item.key).length;const active=thread.reactions.some(row=>row.reaction===item.key&&row.userId===currentUserId);return <button type="button" className={active?"active":""} onClick={()=>react(item.key)} disabled={pending} aria-label={item.label} key={item.key}><span>{item.emoji}</span>{count>0&&<b>{count}</b>}</button>})}</div>
-    {thread.replies.length>0&&<div className="reply-list">{thread.replies.map(item=><div className="reply" key={item.id}><ClubCrest seed={item.userId} label={item.name} imageUrl={item.crestUrl} size="sm"/><div><b>{item.name}</b><p>{item.body}</p></div></div>)}</div>}
+    {thread.replies.length>0&&<div className="reply-list">{thread.replies.map(item=><div className="reply" key={item.id}><Link href={`/players/${item.userId}`}><ClubCrest seed={item.userId} label={item.name} imageUrl={item.crestUrl} size="sm"/></Link><div><Link className="player-name-link" href={`/players/${item.userId}`}>{item.name}</Link><p>{item.body}</p></div></div>)}</div>}
     <form className="reply-form" onSubmit={submit}><input value={reply} onChange={event=>setReply(event.target.value)} maxLength={180} placeholder="Reply…" aria-label={`Reply to ${thread.name}`}/><button disabled={pending||!reply.trim()} aria-label="Send reply"><Send size={16}/></button></form>
     {error&&<p className="form-error">{error}</p>}
   </article>;

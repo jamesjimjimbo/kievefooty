@@ -1,5 +1,6 @@
 "use client";
 import { useEffect,useRef,useState,useTransition } from "react";
+import Link from "next/link";
 import { CheckCircle2,Clock3,LoaderCircle,LockKeyhole,MessageCircle,RefreshCw,ShieldQuestion,Swords } from "lucide-react";
 import type { Fixture,Outcome } from "@/lib/demo-data";
 import { AppShell } from "@/components/app-shell";
@@ -115,21 +116,21 @@ function StandingsSnapshot({rows}:{rows:PicksPageData["standings"]}){
   const [tab,setTab]=useState<"first"|"second"|"overall">("overall");
   const [project,setProject]=useState(false);
   const selected=tab==="overall"&&project?rows.projected:rows[tab];
-  const top=[...selected].sort((a,b)=>b.score-a.score).slice(0,8);
+  const sorted=[...selected].sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
   return <section className="home-standings"><div className="section-label"><div><p className="eyebrow">At a glance</p><h2>League table</h2></div><a className="text-link" href="/standings">Full table →</a></div>
     <div className="home-standing-controls"><div className="mini-segments" aria-label="Standings period">{([["first","First"],["second","Second"],["overall","Full"]] as const).map(([value,label])=><button type="button" key={value} onClick={()=>{setTab(value);if(value!=="overall")setProject(false)}} className={tab===value?"active":""}>{label}</button>)}</div>
     {tab==="overall"&&<label className="projection-toggle"><input type="checkbox" checked={project} onChange={event=>setProject(event.target.checked)}/><span/><b>Include season bets</b></label>}</div>
     {tab==="overall"&&project&&<p className="projection-note">Assumes today&apos;s league and market results are final.</p>}
-    <div className="card table compact-table">{top.map((row,index)=><div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><span className="player"><ClubCrest seed={row.id} label={row.name} imageUrl={row.crestUrl} size="sm"/><span>{row.name}{row.me&&<small className="you-label">You</small>}</span></span><span className="points">{row.score>0?"+":""}{row.score}</span></div>)}</div>
+    <div className="card table compact-table">{sorted.map((row,index)=><div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><Link className="player player-link" href={`/players/${row.id}`}><ClubCrest seed={row.id} label={row.name} imageUrl={row.crestUrl} size="sm"/><span>{row.name}{row.me&&<small className="you-label">You</small>}</span></Link><span className="points">{row.score>0?"+":""}{row.score}</span></div>)}</div>
   </section>;
 }
 
 function WeeklyRecap({recap}:{recap:NonNullable<PicksPageData["previousWeek"]>}){
   return <section className="weekly-recap">
     <div className="recap-intro"><span>Glory &amp; grief</span><b>{recap.label}</b></div>
-    <div className="recap-player winner"><ClubCrest seed={recap.winner.id} label={recap.winner.name} imageUrl={recap.winner.crestUrl}/><div><small>Last week&apos;s winner</small><b>{recap.winner.name}</b></div><strong>{recap.winner.score>0?"+":""}{recap.winner.score}</strong></div>
+    <Link className="recap-player winner" href={`/players/${recap.winner.id}`}><ClubCrest seed={recap.winner.id} label={recap.winner.name} imageUrl={recap.winner.crestUrl}/><div><small>Last week&apos;s winner</small><b>{recap.winner.name}</b></div><strong>{recap.winner.score>0?"+":""}{recap.winner.score}</strong></Link>
     <div className="recap-divider"/>
-    <div className="recap-player loser"><ClubCrest seed={recap.loser.id} label={recap.loser.name} imageUrl={recap.loser.crestUrl}/><div><small>Form guide enthusiast</small><b>{recap.loser.name}</b></div><span>The model remains confident.</span></div>
+    <Link className="recap-player loser" href={`/players/${recap.loser.id}`}><ClubCrest seed={recap.loser.id} label={recap.loser.name} imageUrl={recap.loser.crestUrl}/><div><small>Form guide enthusiast</small><b>{recap.loser.name}</b></div><span>The model remains confident.</span></Link>
   </section>;
 }
 
@@ -148,7 +149,7 @@ function LockedLeaguePicks({entries,fixtures,challenges}:{entries:PicksPageData[
         <div className="outcome-lanes">{(["home","draw","away"] as Outcome[]).map(outcome=>{
           const backers=picks.filter(pick=>pick.outcome===outcome);
           const label=outcome==="home"?fixture.home:outcome==="away"?fixture.away:"Draw";
-          return <div className="outcome-lane" key={outcome}><div className="outcome-lane-head"><b>{label}</b><span>{backers.length}</span></div>{backers.length?backers.map(pick=>{const potential=Math.round((pick.stake*pick.odds-pick.stake)*100)/100;const result=pick.isCorrect===null?null:pick.isCorrect?potential:-pick.stake;return <div className="watch-pick" key={`${pick.userId}-${pick.kind}`}><ClubCrest seed={pick.userId} label={pick.name} imageUrl={pick.crestUrl} size="sm"/><div><b>{pick.name}</b><small>{pick.stake} pts · {pick.kind==="gotw"?"GOTW":"Own"}{pick.source==="auto"?" · Auto":""}</small></div><strong className={result!==null&&result<0?"negative":""}>{result===null?`+${potential}`:`${result>0?"+":""}${result}`}</strong></div>}):<p className="no-backs">No backers</p>}</div>
+          return <div className="outcome-lane" key={outcome}><div className="outcome-lane-head"><b>{label}</b><span>{backers.length}</span></div>{backers.length?backers.map(pick=>{const potential=Math.round((pick.stake*pick.odds-pick.stake)*100)/100;const result=pick.isCorrect===null?null:pick.isCorrect?potential:-pick.stake;return <div className="watch-pick" key={`${pick.userId}-${pick.kind}`}><Link href={`/players/${pick.userId}`}><ClubCrest seed={pick.userId} label={pick.name} imageUrl={pick.crestUrl} size="sm"/></Link><div><Link className="player-name-link" href={`/players/${pick.userId}`}>{pick.name}</Link><small>{pick.stake} pts · {pick.kind==="gotw"?"GOTW":"Own"}{pick.source==="auto"?" · Auto":""}</small></div><strong className={result!==null&&result<0?"negative":""}>{result===null?`+${potential}`:`${result>0?"+":""}${result}`}</strong></div>}):<p className="no-backs">No backers</p>}</div>
         })}</div>
       </article>;
     })}</div>:<div className="card"><p className="subtle" style={{margin:0}}>No submissions were recorded for this week.</p></div>}

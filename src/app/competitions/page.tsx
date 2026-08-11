@@ -1,4 +1,5 @@
 import type {Metadata} from "next";
+import Link from "next/link";
 import {redirect} from "next/navigation";
 import {ArrowDown,Check,Clock3,LockKeyhole,Sparkles,Trophy} from "lucide-react";
 import {AppShell} from "@/components/app-shell";
@@ -90,8 +91,8 @@ function PredictionWall({markets}:{markets:{id:string;title:string;entries:{user
     <div className="prediction-market-grid">{markets.map(market=><article className="card prediction-market" key={market.id}>
       <header><span>{market.entries.length} entr{market.entries.length===1?"y":"ies"}</span><h3>{market.title}</h3></header>
       <div className="prediction-entry-list">{market.entries.length?market.entries.map(entry=><div className="prediction-entry" key={entry.userId}>
-        <ClubCrest seed={entry.userId} label={entry.name} imageUrl={entry.crestUrl} size="sm"/>
-        <div><b>{entry.name}</b><span>{entry.selections.map(selection=><i key={selection}>{selection}</i>)}</span></div>
+        <Link href={`/players/${entry.userId}`}><ClubCrest seed={entry.userId} label={entry.name} imageUrl={entry.crestUrl} size="sm"/></Link>
+        <div><Link className="player-name-link" href={`/players/${entry.userId}`}>{entry.name}</Link><span>{entry.selections.map(selection=><i key={selection}>{selection}</i>)}</span></div>
       </div>):<p className="subtle">No entries were submitted.</p>}</div>
     </article>)}</div>
   </section>;

@@ -1,5 +1,6 @@
 "use client";
 import {useState} from "react";
+import Link from "next/link";
 import {AppShell} from "./app-shell";
 import {ClubCrest} from "./club-crest";
 
@@ -31,7 +32,7 @@ function CompetitionHeader({title,prize,description}:{title:string;prize:string;
 }
 
 function PlayerCell({player}:{player:StandingPlayer}){
-  return <span className="player"><ClubCrest seed={player.id} label={player.name} imageUrl={player.crestUrl} size="sm"/><span>{player.name}{player.me&&<small className="you-label">You</small>}</span></span>;
+  return <Link className="player player-link" href={`/players/${player.id}`}><ClubCrest seed={player.id} label={player.name} imageUrl={player.crestUrl} size="sm"/><span>{player.name}{player.me&&<small className="you-label">You</small>}</span></Link>;
 }
 
 function ScoreCompetition({title,prize,description,players,scoreKey}:{title:string;prize:string;description:string;players:StandingPlayer[];scoreKey:"first"|"second"}){
