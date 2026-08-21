@@ -80,8 +80,8 @@ function LivePicks({data}:{data:PicksPageData}){
     <div className="picks-topline"><div><span>{data.week.competition} · Week {data.week.number}</span><b>{data.week.label}</b></div><span className={`pill ${data.locked?"":"live"}`}><Clock3 size={13}/>{data.locked?"Locked":"Open"}</span></div>
     {data.previousWeek&&<WeeklyRecap recap={data.previousWeek}/>}
     <div className="picks-layout"><div>
-      <section className="card hero-card compact-hero"><div><p className="eyebrow">Weekly deadline</p><h2>Lock in by {data.week.lockLabel}</h2><p>The first eligible kickoff locks both picks.{data.week.oddsLabel&&<span className="odds-as-of"> Odds captured {data.week.oddsLabel}; your saved price is locked with your pick.</span>}</p></div><div className="stat-row"><div className="stat"><span className="stat-label">Bankroll</span><span className="stat-value">{data.bankroll}</span></div><div className="stat"><span className="stat-label">Your rank</span><span className="stat-value">#{data.rank}</span></div></div></section>
-      <div className="pick-choice-grid">
+      {!data.locked&&<section className="card hero-card compact-hero"><div><p className="eyebrow">Weekly deadline</p><h2>Lock in by {data.week.lockLabel}</h2><p>The first eligible kickoff locks both picks.{data.week.oddsLabel&&<span className="odds-as-of"> Odds captured {data.week.oddsLabel}; your saved price is locked with your pick.</span>}</p></div><div className="stat-row"><div className="stat"><span className="stat-label">Bankroll</span><span className="stat-value">{data.bankroll}</span></div><div className="stat"><span className="stat-label">Your rank</span><span className="stat-value">#{data.rank}</span></div></div></section>}
+      {data.locked?<LockedPickReceipt gotw={gotw} gotwPick={gotwPick} gotwStake={gotwStake} other={other} otherPick={otherPick} otherStake={otherStake} source={data.existing.source}/>:<><div className="pick-choice-grid">
         <section className="pick-choice">
           <div className="section-label"><div><p className="eyebrow">Required</p><h2>Game of the Week</h2></div><ShieldQuestion size={21}/></div>
           <div className="card fixture-select fixed-fixture-select"><div><span>Game of the Week</span><b>{gotw.home} vs {gotw.away}</b></div><span className="pill">Fixed</span></div>
@@ -95,12 +95,11 @@ function LivePicks({data}:{data:PicksPageData}){
       </div>
       {message&&<div className={message.toLowerCase().includes("error")?"notice":"saved"}><CheckCircle2 size={20}/>{message}</div>}
       <div className={`autosave-bar ${saveStatus}`}>
-        {data.locked?<><CheckCircle2 size={18}/><div><b>Picks locked</b><span>Your final selections are saved.</span></div></>
-        :!signature?<><Clock3 size={18}/><div><b>Finish both picks</b><span>They&apos;ll save automatically as soon as both outcomes are selected.</span></div></>
+        {!signature?<><Clock3 size={18}/><div><b>Finish both picks</b><span>They&apos;ll save automatically as soon as both outcomes are selected.</span></div></>
         :saveStatus==="error"?<><RefreshCw size={18}/><div><b>Couldn&apos;t save</b><span>{saveError}</span></div><button type="button" onClick={()=>setRetryNonce(value=>value+1)}>Retry</button></>
         :saveStatus==="saving"||saveStatus==="waiting"?<><LoaderCircle className="spin" size={18}/><div><b>{saveStatus==="waiting"?"Changes queued":"Saving changes"}</b><span>You can keep editing.</span></div></>
         :<><CheckCircle2 size={18}/><div><b>All changes saved</b><span>No Save button needed.</span></div></>}
-      </div>
+      </div></>}
       {!data.locked&&<section className="card weekly-comment-editor"><div className="weekly-comment-head"><div><p className="eyebrow"><MessageCircle size={14}/> Optional</p><h2>Explain your picks—or talk some shit</h2></div><span className="pill"><LockKeyhole size={13}/> Hidden until lock</span></div><textarea value={comment} onChange={event=>{setComment(event.target.value);setCommentMessage("")}} maxLength={180} rows={3} placeholder="180 characters. Confidence encouraged; evidence optional."/><div className="comment-editor-foot"><span className="character-count">{comment.length}/180</span><button type="button" className="secondary" onClick={saveComment} disabled={commentPending||saveStatus!=="saved"}>{commentPending?"Saving…":"Save statement"}</button></div>{saveStatus!=="saved"&&<p className="microcopy">Finish your two picks first, then add your statement.</p>}{commentMessage&&<p className={commentMessage.toLowerCase().includes("saved")||commentMessage.toLowerCase().includes("removed")?"form-success":"form-error"}>{commentMessage}</p>}</section>}
       {data.locked&&<section className="locked-conversations"><div className="section-label"><div><p className="eyebrow">Embargo lifted</p><h2>Pre-match statements</h2><p className="subtle">React or reply now that everyone&apos;s picks are locked.</p></div></div><WeeklyConversations threads={data.conversations} currentUserId={data.currentUserId} compact/></section>}
       {data.locked&&<LockedLeaguePicks entries={data.leaguePicks} fixtures={data.fixtures} challenges={data.weekChallenges}/>}
@@ -110,6 +109,28 @@ function LivePicks({data}:{data:PicksPageData}){
       <div className="card"><p><b>Put 10 points head-to-head.</b></p><p className="subtle challenge-copy">Choose an opponent before lock. No acceptance is needed. Your two normal picks are compared; the higher weekly net wins a 10-point transfer. A tie transfers nothing, but the challenge is used.</p>{data.opponents.length?<><label className="field">Opponent<select value={opponent} onChange={e=>setOpponent(e.target.value)}>{data.opponents.map(p=><option key={p.id} value={p.id}>{p.display_name}</option>)}</select></label><button className="secondary" disabled={pending||data.locked} onClick={challenge}>Issue challenge</button></>:<p className="subtle">You have challenged every available opponent once, or no other players have joined yet.</p>}</div>
     </aside></div>
   </main></AppShell>;
+}
+
+function LockedPickReceipt({gotw,gotwPick,gotwStake,other,otherPick,otherStake,source}:{
+  gotw:Fixture;gotwPick?:Outcome;gotwStake:number;other?:Fixture;otherPick?:Outcome;otherStake:number;source?:string;
+}){
+  const picks=[
+    gotwPick?{fixture:gotw,outcome:gotwPick,stake:gotwStake,label:"Game of the Week"}:null,
+    other&&otherPick?{fixture:other,outcome:otherPick,stake:otherStake,label:"Your other match"}:null,
+  ].filter((pick):pick is {fixture:Fixture;outcome:Outcome;stake:number;label:string}=>Boolean(pick));
+  return <section className="locked-pick-receipt">
+    <div className="locked-receipt-head"><div><p className="eyebrow">Your final card</p><h2>Your locked picks</h2><p>No controls, no ambiguity—this is what you&apos;re backing.</p></div><span><LockKeyhole size={14}/> Locked</span></div>
+    {picks.length?<div className="locked-receipt-grid">{picks.map(pick=>{
+      const selection=pick.outcome==="home"?pick.fixture.home:pick.outcome==="away"?pick.fixture.away:"Draw";
+      const odds=pick.fixture.odds[pick.outcome];
+      const potential=Math.round((pick.stake*odds-pick.stake)*100)/100;
+      return <article className="card locked-receipt-pick" key={pick.label}>
+        <div className="locked-receipt-meta"><span>{pick.label}</span>{source==="auto"&&<i>Auto-picked</i>}</div>
+        <div className="locked-receipt-fixture"><span>{pick.fixture.home}</span><small>vs</small><span>{pick.fixture.away}</span></div>
+        <div className="locked-receipt-selection"><div><small>Your pick</small><strong>{selection}</strong></div><div><small>Stake</small><strong>{pick.stake} pts</strong></div><div><small>Locked odds</small><strong>{odds.toFixed(2)}</strong></div><div><small>Potential</small><strong className="positive">+{potential.toFixed(2)}</strong></div></div>
+      </article>;
+    })}</div>:<div className="card locked-receipt-empty">No weekly picks were recorded.</div>}
+  </section>;
 }
 
 function StandingsSnapshot({rows}:{rows:PicksPageData["standings"]}){

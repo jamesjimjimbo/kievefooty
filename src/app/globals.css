@@ -354,6 +354,25 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .autosave-bar.saved { color: #087f72; border-color: #bcefe5; background: var(--mint); }
 .autosave-bar.error { color: #9c4a2c; border-color: #ffd5bd; background: #fff2e9; }
 .autosave-bar button { min-height: 32px; padding: 0 10px; color: var(--primary); border: 1px solid #d9d3fa; border-radius: 9px; background: white; font-size: 9px; font-weight: 900; }
+.locked-pick-receipt { overflow: hidden; border-radius: 19px; background: linear-gradient(135deg,#2e238e,var(--primary) 58%,#7655eb); box-shadow: 0 18px 45px rgba(57,38,170,.18); }
+.locked-receipt-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 17px 18px; color: white; }
+.locked-receipt-head .eyebrow { margin-bottom: 3px; color: #a8edf1; }
+.locked-receipt-head h2 { margin: 0; color: white; }
+.locked-receipt-head p:last-child { margin: 4px 0 0; color: rgba(255,255,255,.68); font-size: 9px; }
+.locked-receipt-head > span { display: inline-flex; align-items: center; gap: 5px; padding: 7px 9px; border: 1px solid rgba(255,255,255,.2); border-radius: 99px; background: rgba(255,255,255,.1); font-size: 8px; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+.locked-receipt-grid { display: grid; gap: 1px; padding: 1px; background: rgba(255,255,255,.16); }
+.locked-receipt-pick { display: grid; gap: 12px; border: 0; border-radius: 0; box-shadow: none; }
+.locked-receipt-grid .card + .card { margin-top: 0; }
+.locked-receipt-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--primary); font-size: 8px; font-weight: 950; letter-spacing: .07em; text-transform: uppercase; }
+.locked-receipt-meta i { padding: 4px 6px; color: #9c4a2c; border-radius: 99px; background: #fff2e9; font-size: 7px; font-style: normal; }
+.locked-receipt-fixture { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font-size: 13px; font-weight: 900; }
+.locked-receipt-fixture small { color: var(--muted); font-size: 8px; font-weight: 750; }
+.locked-receipt-selection { display: grid; grid-template-columns: 1.3fr repeat(3,.7fr); gap: 1px; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--line); }
+.locked-receipt-selection > div { min-width: 0; display: grid; gap: 3px; padding: 9px; background: #faf9ff; }
+.locked-receipt-selection small { color: var(--muted); font-size: 7px; font-weight: 850; text-transform: uppercase; }
+.locked-receipt-selection strong { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.locked-receipt-selection strong.positive { color: #087f72; }
+.locked-receipt-empty { border: 0; border-radius: 0; color: var(--muted); box-shadow: none; font-size: 10px; }
 .spin { animation: spin .8s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 .picks-sidebar { min-width: 0; }
@@ -899,6 +918,7 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
   .picks-sidebar { position: sticky; top: 88px; }
   .compact-hero { grid-template-columns: 1.25fr .75fr; align-items: center; padding: 18px 20px; }
   .compact-hero .stat-row { margin-top: 0; }
+  .locked-receipt-grid { grid-template-columns: 1fr 1fr; }
   .section-label { margin-top: 20px; }
   .card { padding: 16px; }
   .fixture-head { margin-bottom: 12px; }
