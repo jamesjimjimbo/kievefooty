@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { syncWeeklyResults as runResultSync } from "@/lib/result-sync";
 
 async function adminClient(){
   const supabase=await createClient();
@@ -91,4 +92,37 @@ export async function refreshLeagueTable(){
   revalidatePath("/admin");
   revalidatePath("/picks");
   revalidatePath("/standings");
+}
+
+export async function syncMatchResults(){
+  const supabase=await adminClient();
+  const apiKey=process.env.FOOTBALL_DATA_API_KEY;
+  if(!apiKey)throw new Error("Add FOOTBALL_DATA_API_KEY to enable result syncing");
+  await runResultSync(supabase,apiKey);
+  revalidatePath("/admin");
+  revalidatePath("/picks");
+  revalidatePath("/standings");
+  revalidatePath("/season");
+}
+
+export async function overrideFixtureResult(formData:FormData){
+  const fixtureId=String(formData.get("fixtureId")??"");
+  const weekId=String(formData.get("weekId")??"");
+  const homeScore=Number(formData.get("homeScore"));
+  const awayScore=Number(formData.get("awayScore"));
+  if(!fixtureId||!weekId||!Number.isInteger(homeScore)||homeScore<0||!Number.isInteger(awayScore)||awayScore<0){
+    throw new Error("Enter valid final scores");
+  }
+  const supabase=await adminClient();
+  const {error}=await supabase.from("fixtures").update({
+    home_score:homeScore,away_score:awayScore,status:"final",
+    result_source:"admin",result_updated_at:new Date().toISOString(),
+  }).eq("id",fixtureId).eq("competition_week_id",weekId);
+  if(error)throw new Error(error.message);
+  const {error:settleError}=await supabase.rpc("settle_competition_week",{p_week_id:weekId});
+  if(settleError)throw new Error(settleError.message);
+  revalidatePath("/admin");
+  revalidatePath("/picks");
+  revalidatePath("/standings");
+  revalidatePath("/season");
 }

@@ -30,9 +30,11 @@ function hasWeekLocked(lockAt:string){return new Date().getTime()>=Date.parse(lo
 export default async function PicksPage(){
   const supabase=await createClient();if(!supabase)redirect("/auth/sign-in?error=Supabase+is+not+configured");
   const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/auth/sign-in");
-  const {data:week}=await supabase.from("competition_weeks").select("*").eq("status","open").eq("is_active_betting_week",true).order("number").limit(1).maybeSingle();
+  const {data:activeWeek}=await supabase.from("competition_weeks").select("*").in("status",["open","locked"]).eq("is_active_betting_week",true).order("number").limit(1).maybeSingle();
+  const {data:latestSettled}=activeWeek?{data:null}:await supabase.from("competition_weeks").select("*").eq("status","settled").eq("is_active_betting_week",true).order("start_date",{ascending:false}).limit(1).maybeSingle();
+  const week=activeWeek??latestSettled;
   if(!week)return <PicksFlow data={null}/>;
-  const locked=hasWeekLocked(week.lock_at);
+  const locked=week.status!=="open"||hasWeekLocked(week.lock_at);
   const {data:previousWeek}=await supabase.from("competition_weeks").select("id,label").eq("status","settled").eq("is_active_betting_week",true).lt("start_date",week.start_date).order("start_date",{ascending:false}).limit(1).maybeSingle();
   const [{data:rows},{data:submission},{data:ledger},{data:profiles},{data:challenges},{data:firstStandings},{data:secondStandings},{data:overallStandings},{data:projectedStandings},{data:leagueSubmissions},{data:previousSubmissions},{data:weekChallenges}]=await Promise.all([
     supabase.from("fixtures").select("id,kickoff_at,is_gotw,status,home_score,away_score,home:teams!fixtures_home_team_id_fkey(name),away:teams!fixtures_away_team_id_fkey(name),fixture_odds(home,draw,away,captured_at)").eq("competition_week_id",week.id).eq("is_eligible",true).order("kickoff_at"),

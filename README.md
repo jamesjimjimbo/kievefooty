@@ -22,7 +22,9 @@ Open `http://localhost:3000`. Protected pages require a confirmed Supabase accou
 4. Create the first user through `/auth/sign-up`; the database trigger creates its profile automatically. Then set `is_admin = true` for that profile in the Supabase Table Editor.
 5. Add fixtures/odds in the SQL editor. Use `/admin` to mark eligible fixtures, select the Game of the Week, and synchronize the lock to the first kickoff.
 
-The browser receives only the publishable key. No service-role key is required by v1. Admin status, deadlines, visibility, challenge uniqueness and ledger access are enforced in Postgres/RLS.
+The browser receives only the publishable key. Automatic result checks use `SUPABASE_SERVICE_ROLE_KEY` exclusively in the protected server cron route; it must never use a `NEXT_PUBLIC_` prefix. Admin status, deadlines, visibility, challenge uniqueness and ledger access are enforced in Postgres/RLS.
+
+Weekly results are fetched from football-data.org each evening through the Vercel cron route at `/api/cron/results`. Set `FOOTBALL_DATA_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `CRON_SECRET` in Vercel. The settlement function is idempotent: corrected scores rebuild weekly wager entries, challenge transfers, and Game-of-the-Week streak bonuses without duplicating points. Admins can also run **Check now** or save a corrected final score from the Admin desk.
 
 ## Checks
 
