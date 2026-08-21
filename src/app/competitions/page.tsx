@@ -29,18 +29,20 @@ export default async function CompetitionsPage(){
   if(error)return <AppShell><main className="content"><div className="page-head"><div><p className="eyebrow">Season-long</p><h1>Competitions</h1></div></div><div className="notice">Season competitions are ready in the app, but the database update still needs to be applied.</div></main></AppShell>;
   const allEntries=(entryData??[]) as unknown as EntryRow[];
   const entries=new Map(allEntries.filter(entry=>entry.user_id===user.id).map(entry=>[entry.market_id,entry.option_ids]));
+  const now=Date.now();
   const markets=((marketData??[]) as unknown as MarketRow[]).map(row=>({
     id:row.id,slug:row.slug,title:row.title,description:row.description,
     selectionHelp:row.selection_help,minSelections:row.min_selections,maxSelections:row.max_selections,
     payoutLabel:row.payout_label,
     lockLabel:new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(row.lock_at)),
-    status:row.status,selected:entries.get(row.id)??[],completed:entries.has(row.id),
+    status:row.status==="open"&&new Date(row.lock_at).getTime()<=now?"locked":row.status,
+    selected:entries.get(row.id)??[],completed:entries.has(row.id),
     options:[...(row.season_market_options??[])].sort((a,b)=>a.sort_order-b.sort_order).map(option=>({...option,odds:option.odds===null?null:Number(option.odds)})),
   })) satisfies SeasonMarket[];
   const open=markets.filter(market=>market.status==="open");
   const completedCount=markets.filter(market=>market.completed).length;
   const revealed=((marketData??[]) as unknown as MarketRow[])
-    .filter(market=>market.status==="locked"||market.status==="settled")
+    .filter(market=>market.status==="locked"||market.status==="settled"||(market.status==="open"&&new Date(market.lock_at).getTime()<=now))
     .map(market=>{
       const labels=new Map((market.season_market_options??[]).map(option=>[option.id,option.label]));
       return {
