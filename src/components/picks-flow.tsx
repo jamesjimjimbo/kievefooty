@@ -142,14 +142,14 @@ function StandingsSnapshot({rows}:{rows:PicksPageData["standings"]}){
     <div className="home-standing-controls"><div className="mini-segments" aria-label="Standings period">{([["first","First"],["second","Second"],["overall","Full"]] as const).map(([value,label])=><button type="button" key={value} onClick={()=>{setTab(value);if(value!=="overall")setProject(false)}} className={tab===value?"active":""}>{label}</button>)}</div>
     {tab==="overall"&&<label className="projection-toggle"><input type="checkbox" checked={project} onChange={event=>setProject(event.target.checked)}/><span/><b>Include season bets</b></label>}</div>
     {tab==="overall"&&project&&<p className="projection-note">Assumes today&apos;s league and market results are final.</p>}
-    <div className="card table compact-table">{sorted.map((row,index)=><div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><Link className="player player-link" href={`/players/${row.id}`}><ClubCrest seed={row.id} label={row.name} imageUrl={row.crestUrl} size="sm"/><span>{row.name}{row.me&&<small className="you-label">You</small>}</span></Link><span className="points">{row.score>0?"+":""}{row.score}</span></div>)}</div>
+    <div className="card table compact-table">{sorted.map((row,index)=><div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><Link className="player player-link" href={`/players/${row.id}`}><ClubCrest seed={row.id} label={row.name} imageUrl={row.crestUrl} size="sm"/><span>{row.name}{row.me&&<small className="you-label">You</small>}</span></Link><span className="points">{row.score}</span></div>)}</div>
   </section>;
 }
 
 function WeeklyRecap({recap}:{recap:NonNullable<PicksPageData["previousWeek"]>}){
   return <section className="weekly-recap">
     <div className="recap-intro"><span>Glory &amp; grief</span><b>{recap.label}</b></div>
-    <Link className="recap-player winner" href={`/players/${recap.winner.id}`}><ClubCrest seed={recap.winner.id} label={recap.winner.name} imageUrl={recap.winner.crestUrl}/><div><small>Last week&apos;s winner</small><b>{recap.winner.name}</b></div><strong>{recap.winner.score>0?"+":""}{recap.winner.score}</strong></Link>
+    <Link className="recap-player winner" href={`/players/${recap.winner.id}`}><ClubCrest seed={recap.winner.id} label={recap.winner.name} imageUrl={recap.winner.crestUrl}/><div><small>Last week&apos;s winner</small><b>{recap.winner.name}</b></div><strong>{recap.winner.score}</strong></Link>
     <div className="recap-divider"/>
     <Link className="recap-player loser" href={`/players/${recap.loser.id}`}><ClubCrest seed={recap.loser.id} label={recap.loser.name} imageUrl={recap.loser.crestUrl}/><div><small>Form guide enthusiast</small><b>{recap.loser.name}</b></div><span>The model remains confident.</span></Link>
   </section>;

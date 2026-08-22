@@ -37,12 +37,12 @@ function PlayerCell({player}:{player:StandingPlayer}){
 
 function ScoreCompetition({title,prize,description,players,scoreKey}:{title:string;prize:string;description:string;players:StandingPlayer[];scoreKey:"first"|"second"}){
   const sorted=[...players].sort((a,b)=>b[scoreKey]-a[scoreKey]||a.name.localeCompare(b.name));
-  return <article className="card standings-card"><CompetitionHeader title={title} prize={prize} description={description}/><div className="table competition-table">{sorted.map((player,index)=><div className={`standing-row ${player.me?"me":""}`} key={player.id}><span className="rank">{index+1}</span><PlayerCell player={player}/><span className="points">{player[scoreKey]>0?"+":""}{player[scoreKey]}</span></div>)}</div></article>;
+  return <article className="card standings-card"><CompetitionHeader title={title} prize={prize} description={description}/><div className="table competition-table">{sorted.map((player,index)=><div className={`standing-row ${player.me?"me":""}`} key={player.id}><span className="rank">{index+1}</span><PlayerCell player={player}/><span className="points">{player[scoreKey]}</span></div>)}</div></article>;
 }
 
 function FullCompetition({players}:{players:StandingPlayer[]}){
   const sorted=[...players].sort((a,b)=>b.overall-a.overall||a.name.localeCompare(b.name));
-  return <article className="card standings-card"><CompetitionHeader title="Full Competition" prize="60%" description="Official score beside the current-results forecast."/><div className="standing-column-labels"><span>Official</span><span>If held</span></div><div className="table competition-table">{sorted.map((player,index)=><div className={`standing-row full-standing-row ${player.me?"me":""}`} key={player.id}><span className="rank">{index+1}</span><PlayerCell player={player}/><span className="official-score">{player.overall>0?"+":""}{player.overall}</span><span className="points projected-score">{player.projected>0?"+":""}{player.projected}</span></div>)}</div></article>;
+  return <article className="card standings-card"><CompetitionHeader title="Full Competition" prize="60%" description="Official score beside the current-results forecast."/><div className="standing-column-labels"><span>Official</span><span>If held</span></div><div className="table competition-table">{sorted.map((player,index)=><div className={`standing-row full-standing-row ${player.me?"me":""}`} key={player.id}><span className="rank">{index+1}</span><PlayerCell player={player}/><span className="official-score">{player.overall}</span><span className="points projected-score">{player.projected}</span></div>)}</div></article>;
 }
 
 function AccuracyCompetition({players}:{players:StandingPlayer[]}){
@@ -85,7 +85,7 @@ function StandingsHistory({rows}:{rows:StandingHistoryRow[]}){
           const points=weeks.map((week,index)=>({week,index,score:scoreMap.get(`${player.id}:${week.number}`)??0}));
           const path=points.map((point,index)=>`${index?"L":"M"} ${x(point.index)} ${y(point.score)}`).join(" ");
           const color=historyColors[playerIndex%historyColors.length];
-          return <g className="history-series" key={player.id}><path d={path} style={{stroke:color}}/>{points.map(point=><circle cx={x(point.index)} cy={y(point.score)} r="5" style={{fill:color}} tabIndex={0} key={point.week.number}><title>{player.name} - {point.week.label}: {view==="accuracy_rate"?`${point.score}% correct`:`${point.score>0?"+":""}${point.score} ${mode.unit}`}</title></circle>)}</g>;
+          return <g className="history-series" key={player.id}><path d={path} style={{stroke:color}}/>{points.map(point=><circle cx={x(point.index)} cy={y(point.score)} r="5" style={{fill:color}} tabIndex={0} key={point.week.number}><title>{player.name} - {point.week.label}: {view==="accuracy_rate"?`${point.score}% correct`:`${point.score} ${mode.unit}`}</title></circle>)}</g>;
         })}
       </svg>
     </div>
