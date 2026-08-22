@@ -66,7 +66,7 @@ export default async function RulesPage(){
           <ChevronRight aria-hidden="true"/>
           <div><i>3</i><b>Everything locks</b><p>Both picks lock at the first eligible kickoff. Everyone&apos;s choices then become visible.</p></div>
           <ChevronRight aria-hidden="true"/>
-          <div><i>4</i><b>Settle at net profit</b><p>Win: stake × decimal odds − stake. Lose: minus your stake.</p></div>
+          <div><i>4</i><b>Collect the full return</b><p>Win: stake × decimal odds, including your stake back. Lose: 0 points returned.</p></div>
         </div>
         <div className="rules-bonus-row">
           <span><Target size={15}/><b>3 straight GOTW wins</b><small>+10 streak bonus, then reset</small></span>

@@ -8,7 +8,7 @@ export function validateWeeklyStakes(gotw:number,own:number){
 }
 export function settleWager(stake:number,odds:number,won:boolean){
   if(stake<=0||odds<1)throw new Error("Invalid wager");
-  return won?round(stake*odds-stake):-stake;
+  return won?round(stake*odds):0;
 }
 export function settleChallenge(aNet:number,bNet:number){
   if(aNet===bNet)return {challenger:0,opponent:0,consumed:true};

@@ -92,7 +92,7 @@ export default async function PicksPage(){
       score:Math.round(row.picks.reduce((sum,pick)=>{
         if(pick.is_correct===null)return sum;
         const stake=Number(pick.stake);
-        return sum+(pick.is_correct?stake*Number(pick.odds)-stake:-stake);
+        return sum+(pick.is_correct?stake*Number(pick.odds):0);
       },0)*100)/100,
     }))
     .sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));

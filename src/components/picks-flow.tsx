@@ -123,11 +123,11 @@ function LockedPickReceipt({gotw,gotwPick,gotwStake,other,otherPick,otherStake,s
     {picks.length?<div className="locked-receipt-grid">{picks.map(pick=>{
       const selection=pick.outcome==="home"?pick.fixture.home:pick.outcome==="away"?pick.fixture.away:"Draw";
       const odds=pick.fixture.odds[pick.outcome];
-      const potential=Math.round((pick.stake*odds-pick.stake)*100)/100;
+      const potential=Math.round(pick.stake*odds*100)/100;
       return <article className="card locked-receipt-pick" key={pick.label}>
         <div className="locked-receipt-meta"><span>{pick.label}</span>{source==="auto"&&<i>Auto-picked</i>}</div>
         <div className="locked-receipt-fixture"><span>{pick.fixture.home}</span><small>vs</small><span>{pick.fixture.away}</span></div>
-        <div className="locked-receipt-selection"><div><small>Your pick</small><strong>{selection}</strong></div><div><small>Stake</small><strong>{pick.stake} pts</strong></div><div><small>Locked odds</small><strong>{odds.toFixed(2)}</strong></div><div><small>Potential</small><strong className="positive">+{potential.toFixed(2)}</strong></div></div>
+        <div className="locked-receipt-selection"><div><small>Your pick</small><strong>{selection}</strong></div><div><small>Stake</small><strong>{pick.stake} pts</strong></div><div><small>Locked odds</small><strong>{odds.toFixed(2)}</strong></div><div><small>Potential return</small><strong className="positive">+{potential.toFixed(2)}</strong></div></div>
       </article>;
     })}</div>:<div className="card locked-receipt-empty">No weekly picks were recorded.</div>}
   </section>;
@@ -163,14 +163,14 @@ function LockedLeaguePicks({entries,fixtures,challenges}:{entries:PicksPageData[
       const picks=entries.flatMap(entry=>entry.picks.filter(pick=>pick.fixtureId===fixture.id).map(pick=>({...pick,userId:entry.userId,name:entry.name,crestUrl:entry.crestUrl,source:entry.source})));
       if(!picks.length)return null;
       const status=fixture.status?.toLowerCase();
-      const final=status==="finished";
+      const final=status==="finished"||status==="final";
       const live=status==="live"||status==="in_play"||status==="paused";
       return <article className="card watch-fixture" key={fixture.id}>
         <div className="fixture-head"><div><div className="teams">{fixture.home} <span className="subtle">vs</span> {fixture.away}</div><div className="kickoff">{fixture.kickoff}</div></div><span className={`match-state ${final?"final":live?"live":"scheduled"}`}>{fixture.homeScore!==null&&fixture.homeScore!==undefined?`${fixture.homeScore}–${fixture.awayScore}`:final?"Final":live?"Live":"Upcoming"}</span></div>
         <div className="outcome-lanes">{(["home","draw","away"] as Outcome[]).map(outcome=>{
           const backers=picks.filter(pick=>pick.outcome===outcome);
           const label=outcome==="home"?fixture.home:outcome==="away"?fixture.away:"Draw";
-          return <div className="outcome-lane" key={outcome}><div className="outcome-lane-head"><b>{label}</b><span>{backers.length}</span></div>{backers.length?backers.map(pick=>{const potential=Math.round((pick.stake*pick.odds-pick.stake)*100)/100;const result=pick.isCorrect===null?null:pick.isCorrect?potential:-pick.stake;return <div className="watch-pick" key={`${pick.userId}-${pick.kind}`}><Link href={`/players/${pick.userId}`}><ClubCrest seed={pick.userId} label={pick.name} imageUrl={pick.crestUrl} size="sm"/></Link><div><Link className="player-name-link" href={`/players/${pick.userId}`}>{pick.name}</Link><small>{pick.stake} pts · {pick.kind==="gotw"?"GOTW":"Own"}{pick.source==="auto"?" · Auto":""}</small></div><strong className={result!==null&&result<0?"negative":""}>{result===null?`+${potential}`:`${result>0?"+":""}${result}`}</strong></div>}):<p className="no-backs">No backers</p>}</div>
+          return <div className="outcome-lane" key={outcome}><div className="outcome-lane-head"><b>{label}</b><span>{backers.length}</span></div>{backers.length?backers.map(pick=>{const potential=Math.round(pick.stake*pick.odds*100)/100;const result=pick.isCorrect===null?null:pick.isCorrect?potential:0;return <div className="watch-pick" key={`${pick.userId}-${pick.kind}`}><Link href={`/players/${pick.userId}`}><ClubCrest seed={pick.userId} label={pick.name} imageUrl={pick.crestUrl} size="sm"/></Link><div><Link className="player-name-link" href={`/players/${pick.userId}`}>{pick.name}</Link><small>{pick.stake} pts · {pick.kind==="gotw"?"GOTW":"Own"}{pick.source==="auto"?" · Auto":""}</small></div><strong>{result===null?`+${potential}`:`${result>0?"+":""}${result}`}</strong></div>}):<p className="no-backs">No backers</p>}</div>
         })}</div>
       </article>;
     })}</div>:<div className="card"><p className="subtle" style={{margin:0}}>No submissions were recorded for this week.</p></div>}
