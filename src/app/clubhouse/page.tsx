@@ -18,11 +18,13 @@ function hasLocked(lockAt:string){return new Date().getTime()>=Date.parse(lockAt
 
 export default async function ClubhousePage(){
   const supabase=await createClient();if(!supabase)redirect("/auth/sign-in");const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/auth/sign-in");
-  const [{data:profiles},{data:standings},{data:week}]=await Promise.all([
+  const [{data:profiles},{data:standings},{data:openWeek}]=await Promise.all([
     supabase.from("profiles").select("id,display_name,favorite_team,bio,motto,crest_url,profile_completed_at").order("display_name"),
     supabase.rpc("get_standings",{p_half:null}),
-    supabase.from("competition_weeks").select("id,label,lock_at").eq("is_active_betting_week",true).in("status",["open","locked"]).order("start_date").limit(1).maybeSingle(),
+    supabase.from("competition_weeks").select("id,label,lock_at").eq("is_active_betting_week",true).eq("status","open").order("start_date").limit(1).maybeSingle(),
   ]);
+  const {data:lockedWeek}=openWeek?{data:null}:await supabase.from("competition_weeks").select("id,label,lock_at").eq("is_active_betting_week",true).eq("status","locked").order("start_date",{ascending:false}).limit(1).maybeSingle();
+  const week=openWeek??lockedWeek;
   const locked=Boolean(week?.lock_at&&hasLocked(week.lock_at));
   let conversations:WeeklyConversation[]=[];
   if(week&&locked){

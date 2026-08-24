@@ -30,7 +30,9 @@ function hasWeekLocked(lockAt:string){return new Date().getTime()>=Date.parse(lo
 export default async function PicksPage(){
   const supabase=await createClient();if(!supabase)redirect("/auth/sign-in?error=Supabase+is+not+configured");
   const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/auth/sign-in");
-  const {data:activeWeek}=await supabase.from("competition_weeks").select("*").in("status",["open","locked"]).eq("is_active_betting_week",true).order("number").limit(1).maybeSingle();
+  const {data:openWeek}=await supabase.from("competition_weeks").select("*").eq("status","open").eq("is_active_betting_week",true).order("number").limit(1).maybeSingle();
+  const {data:lockedWeek}=openWeek?{data:null}:await supabase.from("competition_weeks").select("*").eq("status","locked").eq("is_active_betting_week",true).order("number",{ascending:false}).limit(1).maybeSingle();
+  const activeWeek=openWeek??lockedWeek;
   const {data:latestSettled}=activeWeek?{data:null}:await supabase.from("competition_weeks").select("*").eq("status","settled").eq("is_active_betting_week",true).order("start_date",{ascending:false}).limit(1).maybeSingle();
   const week=activeWeek??latestSettled;
   if(!week)return <PicksFlow data={null}/>;
