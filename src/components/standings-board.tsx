@@ -1,6 +1,7 @@
 "use client";
 import {useState} from "react";
 import Link from "next/link";
+import {Swords} from "lucide-react";
 import {AppShell} from "./app-shell";
 import {ClubCrest} from "./club-crest";
 
@@ -12,8 +13,12 @@ export type StandingHistoryRow={
   week_number:number;week_label:string;week_end:string;user_id:string;display_name:string;
   first_score:number;second_score:number;full_score:number;accuracy_rate:number;
 };
+export type ChallengeHistory={
+  id:string;weekNumber:number;weekLabel:string;challengerId:string;challenger:string;challengerCrestUrl:string|null;
+  opponentId:string;opponent:string;opponentCrestUrl:string|null;challengerNet:number|null;opponentNet:number|null;settled:boolean;
+};
 
-export function StandingsBoard({players,history}:{players:StandingPlayer[];history:StandingHistoryRow[]}){
+export function StandingsBoard({players,history,challenges}:{players:StandingPlayer[];history:StandingHistoryRow[];challenges:ChallengeHistory[]}){
   return <AppShell><main className="content content-wide">
     <div className="page-head"><div><p className="eyebrow">2026 / 27</p><h1>Standings</h1><p className="subtle">Every competition, all in one place.</p></div></div>
     <section className="standings-grid">
@@ -22,9 +27,16 @@ export function StandingsBoard({players,history}:{players:StandingPlayer[];histo
       <FullCompetition players={players}/>
       <AccuracyCompetition players={players}/>
     </section>
+    <ChallengeLedger rows={challenges}/>
     <StandingsHistory rows={history}/>
     <p className="standings-footnote">Weekly 10-point credits never count here. Projected Full Competition scores are informational and do not alter official points.</p>
   </main></AppShell>;
+}
+
+function ChallengeLedger({rows}:{rows:ChallengeHistory[]}){
+  if(!rows.length)return null;
+  const weeks=Array.from(new Map(rows.map(row=>[row.weekNumber,{number:row.weekNumber,label:row.weekLabel}])).values()).sort((a,b)=>b.number-a.number);
+  return <section className="card challenge-ledger"><header><div><p className="eyebrow">Head to head</p><h2>Weekly challenges</h2><p>Every locked matchup, visible to the whole league.</p></div><Swords size={22}/></header><div className="challenge-ledger-weeks">{weeks.map(week=><section key={week.number}><div className="challenge-week-label"><b>Week {week.number}</b><span>{week.label}</span></div>{rows.filter(row=>row.weekNumber===week.number).map(row=>{const decided=row.settled&&row.challengerNet!==null&&row.opponentNet!==null;const challengerWon=decided&&row.challengerNet!>row.opponentNet!;const opponentWon=decided&&row.opponentNet!>row.challengerNet!;return <div className="challenge-ledger-row" key={row.id}><Link className={challengerWon?"winner":""} href={`/players/${row.challengerId}`}><ClubCrest seed={row.challengerId} label={row.challenger} imageUrl={row.challengerCrestUrl} size="sm"/><b>{row.challenger}</b></Link><strong>{decided?row.challengerNet:"—"}</strong><small>vs</small><strong>{decided?row.opponentNet:"—"}</strong><Link className={opponentWon?"winner":""} href={`/players/${row.opponentId}`}><b>{row.opponent}</b><ClubCrest seed={row.opponentId} label={row.opponent} imageUrl={row.opponentCrestUrl} size="sm"/></Link>{!decided&&<span className="challenge-pending">Awaiting results</span>}</div>})}</section>)}</div></section>;
 }
 
 function CompetitionHeader({title,prize,description}:{title:string;prize:string;description:string}){

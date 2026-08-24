@@ -10,8 +10,8 @@ type FixtureRow={id:string;kickoff_at:string;is_gotw:boolean;status:string;home_
 type ProfileRow={id:string;display_name:string;crest_url:string|null};
 type ChallengeRow={opponent_id:string};
 type WeekChallengeRow={
-  id:string;challenger_weekly_net:number|string|null;opponent_weekly_net:number|string|null;
-  challenger:{display_name:string}|null;opponent:{display_name:string}|null;
+  id:string;challenger_id:string;opponent_id:string;challenger_weekly_net:number|string|null;opponent_weekly_net:number|string|null;
+  challenger:{display_name:string;crest_url:string|null}|null;opponent:{display_name:string;crest_url:string|null}|null;
 };
 type StandingRow={user_id:string;display_name:string;score:number|string};
 type ProjectedStandingRow=StandingRow&{season_projection:number|string};
@@ -54,9 +54,7 @@ export default async function PicksPage(){
     previousWeek
       ? supabase.from("weekly_submissions").select("user_id,profiles(display_name,crest_url),picks(stake,odds,is_correct)").eq("competition_week_id",previousWeek.id)
       : Promise.resolve({data:[]}),
-    locked
-      ? supabase.from("challenges").select("id,challenger_weekly_net,opponent_weekly_net,challenger:profiles!challenges_challenger_id_fkey(display_name),opponent:profiles!challenges_opponent_id_fkey(display_name)").eq("competition_week_id",week.id)
-      : Promise.resolve({data:[]}),
+    supabase.from("challenges").select("id,challenger_id,opponent_id,challenger_weekly_net,opponent_weekly_net,challenger:profiles!challenges_challenger_id_fkey(display_name,crest_url),opponent:profiles!challenges_opponent_id_fkey(display_name,crest_url)").eq("competition_week_id",week.id),
   ]);
   const fixtureRows=(rows??[]) as unknown as FixtureRow[];
   const leagueRows=(leagueSubmissions??[]) as unknown as LeagueSubmissionRow[];
@@ -98,12 +96,25 @@ export default async function PicksPage(){
       },0)*100)/100,
     }))
     .sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
+  const mappedWeekChallenges=((weekChallenges??[]) as unknown as WeekChallengeRow[]).map(challenge=>({
+    id:challenge.id,challengerId:challenge.challenger_id,opponentId:challenge.opponent_id,
+    challenger:challenge.challenger?.display_name??"Player",challengerCrestUrl:challenge.challenger?.crest_url??null,
+    opponent:challenge.opponent?.display_name??"Player",opponentCrestUrl:challenge.opponent?.crest_url??null,
+    challengerNet:challenge.challenger_weekly_net===null?null:Number(challenge.challenger_weekly_net),
+    opponentNet:challenge.opponent_weekly_net===null?null:Number(challenge.opponent_weekly_net),
+  }));
   const data:PicksPageData={
     week:{id:week.id,number:week.number,label:week.label,lockAt:week.lock_at,lockLabel:new Intl.DateTimeFormat("en-US",{weekday:"long",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(week.lock_at)),competition:week.is_casino?"Casino":week.competition_code==="FAC"?"FA Cup":"Premier League",oddsLabel:latestOddsCapture?new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(latestOddsCapture)):undefined},
     bankroll:(ledger??[]).reduce((sum,row)=>sum+Number(row.amount),0),rank,fixtures,
     existing:{gotw:existing.find(p=>p.kind==="gotw"),own:existing.find(p=>p.kind==="own"),source:submission?.source,commentary:submission?.commentary??""},
     currentUserId:user.id,conversations:conversationRows,
     opponents:opponentRows.filter(p=>!used.has(p.id)),challengeTokens:Math.max(0,opponentRows.length-used.size),
+    personalChallenges:mappedWeekChallenges.filter(challenge=>challenge.challengerId===user.id||challenge.opponentId===user.id).map(challenge=>({
+      id:challenge.id,direction:challenge.opponentId===user.id?"incoming" as const:"outgoing" as const,
+      otherId:challenge.opponentId===user.id?challenge.challengerId:challenge.opponentId,
+      otherName:challenge.opponentId===user.id?challenge.challenger:challenge.opponent,
+      otherCrestUrl:challenge.opponentId===user.id?challenge.challengerCrestUrl:challenge.opponentCrestUrl,
+    })),
     locked,
     standings:{
       first:((firstStandings??[]) as StandingRow[]).map(row=>({id:row.user_id,name:row.display_name,crestUrl:crestMap.get(row.user_id)??null,score:Number(row.score),me:row.user_id===user.id})),
@@ -118,13 +129,7 @@ export default async function PicksPage(){
         outcome:p.selected_outcome,stake:Number(p.stake),odds:Number(p.odds),isCorrect:p.is_correct,
       })),
     })),
-    weekChallenges:((weekChallenges??[]) as unknown as WeekChallengeRow[]).map(challenge=>({
-      id:challenge.id,
-      challenger:challenge.challenger?.display_name??"Player",
-      opponent:challenge.opponent?.display_name??"Player",
-      challengerNet:challenge.challenger_weekly_net===null?null:Number(challenge.challenger_weekly_net),
-      opponentNet:challenge.opponent_weekly_net===null?null:Number(challenge.opponent_weekly_net),
-    })),
+    weekChallenges:mappedWeekChallenges,
     previousWeek:previousWeek&&previousResults.length>1?{
       label:previousWeek.label,
       winner:previousResults[0],

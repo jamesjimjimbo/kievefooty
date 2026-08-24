@@ -13,6 +13,7 @@ type ExistingPick={fixture_id:string;kind:"gotw"|"own";selected_outcome:Outcome;
 export type PicksPageData={
   week:{id:string;number:number;label:string;lockAt:string;lockLabel:string;competition:string;oddsLabel?:string};bankroll:number;rank:number;fixtures:Fixture[];
   existing:{gotw?:ExistingPick;own?:ExistingPick;source?:string;commentary?:string};opponents:{id:string;display_name:string}[];challengeTokens:number;locked:boolean;
+  personalChallenges:{id:string;direction:"incoming"|"outgoing";otherId:string;otherName:string;otherCrestUrl:string|null}[];
   currentUserId:string;conversations:WeeklyConversation[];
   standings:{
     first:{id:string;name:string;crestUrl:string|null;score:number;me:boolean}[];
@@ -21,7 +22,7 @@ export type PicksPageData={
     projected:{id:string;name:string;crestUrl:string|null;score:number;me:boolean;seasonProjection:number}[];
   };
   leaguePicks:{userId:string;name:string;crestUrl:string|null;source:"manual"|"auto";picks:{fixtureId:string;fixture:string;kind:"gotw"|"own";outcome:Outcome;stake:number;odds:number;isCorrect:boolean|null}[]}[];
-  weekChallenges:{id:string;challenger:string;opponent:string;challengerNet:number|null;opponentNet:number|null}[];
+  weekChallenges:{id:string;challengerId:string;opponentId:string;challenger:string;challengerCrestUrl:string|null;opponent:string;opponentCrestUrl:string|null;challengerNet:number|null;opponentNet:number|null}[];
   previousWeek?:{label:string;winner:{id:string;name:string;crestUrl:string|null;score:number};loser:{id:string;name:string;crestUrl:string|null;score:number}};
 };
 
@@ -101,6 +102,7 @@ function LivePicks({data}:{data:PicksPageData}){
       </div></>}
       {!data.locked&&<section className="card weekly-comment-editor"><div className="weekly-comment-head"><div><p className="eyebrow"><MessageCircle size={14}/> Optional</p><h2>Explain your picks—or talk some shit</h2></div><span className="pill"><LockKeyhole size={13}/> Hidden until lock</span></div><textarea value={comment} onChange={event=>{setComment(event.target.value);setCommentMessage("")}} maxLength={180} rows={3} placeholder="180 characters. Confidence encouraged; evidence optional."/><div className="comment-editor-foot"><span className="character-count">{comment.length}/180</span><button type="button" className="secondary" onClick={saveComment} disabled={commentPending||saveStatus!=="saved"}>{commentPending?"Saving…":"Save statement"}</button></div>{saveStatus!=="saved"&&<p className="microcopy">Finish your two picks first, then add your statement.</p>}{commentMessage&&<p className={commentMessage.toLowerCase().includes("saved")||commentMessage.toLowerCase().includes("removed")?"form-success":"form-error"}>{commentMessage}</p>}</section>}
       {!data.locked&&<section className="weekly-challenge"><div className="section-label"><div><p className="eyebrow">Head to head</p><h2>Challenge a mate</h2></div><span className="pill">{data.challengeTokens} left</span></div>
+        {data.personalChallenges.length>0&&<div className="personal-challenge-list">{data.personalChallenges.map(item=><Link className={`personal-challenge-card ${item.direction}`} href={`/players/${item.otherId}`} key={item.id}><ClubCrest seed={item.otherId} label={item.otherName} imageUrl={item.otherCrestUrl} size="md"/><div><span>{item.direction==="incoming"?"You’ve been challenged":"Challenge sent"}</span><b>{item.direction==="incoming"?`${item.otherName} wants your 10 points`:`You’re facing ${item.otherName}`}</b><small>Your normal weekly picks decide it. No acceptance needed.</small></div><Swords size={22}/></Link>)}</div>}
         <div className="card"><p><b>Put 10 points head-to-head.</b></p><p className="subtle challenge-copy">Choose an opponent before lock. No acceptance is needed. Your two normal picks are compared; the higher weekly net wins a 10-point transfer. A tie transfers nothing, but the challenge is used.</p>{data.opponents.length?<><label className="field">Opponent<select value={opponent} onChange={e=>setOpponent(e.target.value)}>{data.opponents.map(p=><option key={p.id} value={p.id}>{p.display_name}</option>)}</select></label><button className="secondary" disabled={pending} onClick={challenge}>Issue challenge</button></>:<p className="subtle">You have challenged every available opponent once, or no other players have joined yet.</p>}</div>
       </section>}
       {data.locked&&<section className="locked-conversations"><div className="section-label"><div><p className="eyebrow">Embargo lifted</p><h2>Pre-match statements</h2><p className="subtle">React or reply now that everyone&apos;s picks are locked.</p></div></div><WeeklyConversations threads={data.conversations} currentUserId={data.currentUserId} compact/></section>}
