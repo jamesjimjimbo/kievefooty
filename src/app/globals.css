@@ -377,6 +377,7 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .compact-table .standing-row { grid-template-columns: 27px 1fr 56px; min-height: 55px; }
 .text-link { color: var(--primary); font-size: 11px; font-weight: 900; }
 .challenge-copy { font-size: 12px; }
+.weekly-challenge { margin-top: 18px; }
 .locked-picks { margin-top: 25px; }
 .league-pick-grid { display: grid; gap: 12px; }
 .league-pick-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
