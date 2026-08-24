@@ -77,10 +77,9 @@ function LivePicks({data}:{data:PicksPageData}){
     return ()=>window.clearTimeout(timer);
   },[data.locked,data.week.id,gotw.id,gotwPick,gotwStake,other,otherPick,otherStake,retryNonce,signature]);
   return <AppShell><main className="content content-wide picks-page">
-    <div className="picks-topline"><div><span>{data.week.competition} · Week {data.week.number}</span><b>{data.week.label}</b></div><span className={`pill ${data.locked?"":"live"}`}><Clock3 size={13}/>{data.locked?"Locked":"Open"}</span></div>
+    <div className="picks-topline"><div><span>{data.week.competition} · Week {data.week.number}</span><b>{data.week.label}</b></div><span className={`pill ${data.locked?"":"live"}`}><Clock3 size={13}/>{data.locked?"Locked":`Locks ${data.week.lockLabel}`}</span></div>
     {data.previousWeek&&<WeeklyRecap recap={data.previousWeek}/>}
     <div className="picks-layout"><div>
-      {!data.locked&&<section className="card hero-card compact-hero"><div><p className="eyebrow">Weekly deadline</p><h2>Lock in by {data.week.lockLabel}</h2><p>The first eligible kickoff locks both picks.{data.week.oddsLabel&&<span className="odds-as-of"> Odds captured {data.week.oddsLabel}; your saved price is locked with your pick.</span>}</p></div><div className="stat-row"><div className="stat"><span className="stat-label">Bankroll</span><span className="stat-value">{data.bankroll}</span></div><div className="stat"><span className="stat-label">Your rank</span><span className="stat-value">#{data.rank}</span></div></div></section>}
       {data.locked?<LockedPickReceipt gotw={gotw} gotwPick={gotwPick} gotwStake={gotwStake} other={other} otherPick={otherPick} otherStake={otherStake} source={data.existing.source}/>:<><div className="pick-choice-grid">
         <section className="pick-choice">
           <div className="section-label"><div><p className="eyebrow">Required</p><h2>Game of the Week</h2></div><ShieldQuestion size={21}/></div>

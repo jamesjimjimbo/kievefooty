@@ -311,8 +311,6 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .recap-player > span:last-child { color: #f5b5bd; font-size: 10px; }
 .recap-divider { height: 1px; background: rgba(255, 255, 255, .12); }
 .picks-layout { display: grid; gap: 20px; }
-.compact-hero { display: grid; gap: 12px; }
-.odds-as-of { color: var(--muted); font-size: 9px; }
 .pick-choice-grid { display: grid; gap: 10px; }
 .pick-choice { min-width: 0; }
 .pick-choice .section-label { min-height: 44px; align-items: flex-end; }
@@ -968,8 +966,6 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
   .recap-divider { width: 1px; height: 35px; }
   .picks-layout { grid-template-columns: minmax(0, 1.75fr) minmax(285px, 1fr); align-items: start; }
   .picks-sidebar { position: sticky; top: 88px; }
-  .compact-hero { grid-template-columns: 1.25fr .75fr; align-items: center; padding: 18px 20px; }
-  .compact-hero .stat-row { margin-top: 0; }
   .locked-receipt-grid { grid-template-columns: 1fr 1fr; }
   .section-label { margin-top: 20px; }
   .card { padding: 16px; }
