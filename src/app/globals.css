@@ -617,6 +617,8 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .prediction-legend i.top-seven,.prediction-marker-stack i.top-seven { background: #099d8e; }
 .prediction-legend i.relegated,.prediction-marker-stack i.relegated { background: #e24d61; }
 .prediction-legend i.sacked,.prediction-marker-stack i.sacked { background: #27233b; }
+.prediction-legend i.cup-winner,.prediction-marker-stack i.cup-winner { background: #ec7c24; }
+.prediction-legend i.fa-cup-winner,.prediction-marker-stack i.fa-cup-winner { background: #bc365f; }
 .prediction-matrix-card { overflow: hidden; padding: 0; box-shadow: none; }
 .prediction-matrix-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-color: #cfc9ed transparent; }
 .prediction-matrix { width: max-content; min-width: 100%; border-spacing: 0; border-collapse: separate; }

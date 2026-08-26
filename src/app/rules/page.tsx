@@ -9,7 +9,7 @@ export const metadata:Metadata={title:"Rules"};
 export const dynamic="force-dynamic";
 
 const seasonPhases=[
-  {date:"Before Aug 21",title:"Season picks",body:"Champion, league positions, managers and Golden Boot.",tone:"season"},
+  {date:"August",title:"Season picks",body:"League calls, managers, Golden Boot and both domestic cups.",tone:"season"},
   {date:"Aug 21-Dec 20",title:"First Half",body:"The normal weekly rhythm begins.",tone:"weekly"},
   {date:"Dec 21-Jan 2",title:"Holiday Casino",body:"Unlimited festive-fixture bets with boosted odds.",tone:"casino"},
   {date:"Jan 6-Apr 30",title:"Second Half",body:"Weekly picks resume for the run-in.",tone:"weekly"},
@@ -24,6 +24,8 @@ const seasonScoring=[
   ["Relegated clubs","50 each"],
   ["Manager sack market","+10 / −5"],
   ["Golden Boot top three","20 each"],
+  ["Carabao Cup winner","10 × odds"],
+  ["FA Cup winner","10 × odds"],
   ["Second-half mover","±5 / place"],
   ["Champions League Final","Final bet"],
 ];

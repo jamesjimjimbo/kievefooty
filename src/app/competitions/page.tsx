@@ -76,6 +76,8 @@ const TEAM_MARKERS:Record<string,{symbol:string;label:string;className:string}>=
   "fifth-to-seventh":{symbol:"T7",label:"Fifth–seventh",className:"top-seven"},
   relegation:{symbol:"R",label:"Relegated",className:"relegated"},
   "manager-exit":{symbol:"S",label:"Manager sacked",className:"sacked"},
+  "carabao-cup-winner":{symbol:"LC",label:"Carabao Cup winner",className:"cup-winner"},
+  "fa-cup-winner":{symbol:"FA",label:"FA Cup winner",className:"fa-cup-winner"},
 };
 
 function PredictionWall({markets,profiles}:{markets:RevealedMarket[];profiles:ProfileRow[]}){
