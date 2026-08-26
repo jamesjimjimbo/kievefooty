@@ -11,15 +11,15 @@ insert into public.season_markets(
     'carabao-cup-winner','Carabao Cup winner',
     'Back one club to win the 2026/27 Carabao Cup. Your quoted price is fixed when the market locks.',
     'Choose one club',1,1,0,
-    '10-point bet · win: 10 × odds · lose: −10',
-    'odds_bet',-10,10,'2026-08-28 19:00:00+00','open',65
+    '10-point bet · win: 10 × odds · lose: 0 returned',
+    'odds_bet',0,10,'2026-08-28 19:00:00+00','open',65
   ),
   (
     'fa-cup-winner','FA Cup winner',
     'Back one club to win the 2026/27 FA Cup. Your quoted price is fixed when the market locks.',
     'Choose one club',1,1,0,
-    '10-point bet · win: 10 × odds · lose: −10',
-    'odds_bet',-10,10,'2026-08-28 19:00:00+00','open',66
+    '10-point bet · win: 10 × odds · lose: 0 returned',
+    'odds_bet',0,10,'2026-08-28 19:00:00+00','open',66
   )
 on conflict(slug) do update set
   title=excluded.title,
