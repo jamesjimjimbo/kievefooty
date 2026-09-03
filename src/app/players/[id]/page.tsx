@@ -1,7 +1,7 @@
 import type {Metadata} from "next";
 import Link from "next/link";
 import {notFound,redirect} from "next/navigation";
-import {ArrowLeft,CheckCircle2,Clock3,MessageCircle,Trash2,Trophy,XCircle} from "lucide-react";
+import {ArrowLeft,CheckCircle2,ChevronDown,Clock3,MessageCircle,Swords,Trash2,Trophy,XCircle} from "lucide-react";
 import {AppShell} from "@/components/app-shell";
 import {ClubCrest} from "@/components/club-crest";
 import {createClient} from "@/lib/supabase/server";
@@ -19,6 +19,12 @@ type Submission={
   picks:Pick[];
 };
 type WallPost={id:string;author_user_id:string;body:string;created_at:string;author:{display_name:string;crest_url:string|null}|null};
+type Challenge={
+  id:string;challenger_id:string;opponent_id:string;settled_at:string|null;
+  challenger_weekly_net:number|string|null;opponent_weekly_net:number|string|null;
+  week:{number:number;label:string}|null;
+  challenger:{display_name:string;crest_url:string|null}|null;opponent:{display_name:string;crest_url:string|null}|null;
+};
 
 const points=(value:number)=>Number.isInteger(value)?String(value):value.toFixed(2).replace(/0+$/,"").replace(/\.$/,"");
 const selectionLabel=(pick:Pick)=>pick.selected_outcome==="draw"?"Draw":pick.selected_outcome==="home"?(pick.fixture?.home?.name??"Home"):(pick.fixture?.away?.name??"Away");
@@ -27,10 +33,11 @@ const pickReturn=(pick:Pick)=>pick.is_correct===true?Number(pick.stake)*Number(p
 export default async function PlayerPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{wall?:string}>}){
   const {id}=await params;const query=await searchParams;if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))notFound();
   const supabase=await createClient();if(!supabase)redirect("/auth/sign-in");const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/auth/sign-in");
-  const [{data:profile},{data:overall},{data:first},{data:second},{data:submissions},{data:wallData},{data:viewer}]=await Promise.all([
+  const [{data:profile},{data:overall},{data:first},{data:second},{data:submissions},{data:challengeData},{data:wallData},{data:viewer}]=await Promise.all([
     supabase.from("profiles").select("id,display_name,favorite_team,bio,motto,crest_url").eq("id",id).maybeSingle(),
     supabase.rpc("get_standings",{p_half:null}),supabase.rpc("get_standings",{p_half:"first"}),supabase.rpc("get_standings",{p_half:"second"}),
     supabase.from("weekly_submissions").select("id,commentary,submitted_at,week:competition_weeks(number,label,status,lock_at),picks(id,kind,selected_outcome,stake,odds,is_correct,fixture:fixtures(status,home_score,away_score,home:teams!fixtures_home_team_id_fkey(name),away:teams!fixtures_away_team_id_fkey(name)))").eq("user_id",id).order("submitted_at",{ascending:false}),
+    supabase.from("challenges").select("id,challenger_id,opponent_id,settled_at,challenger_weekly_net,opponent_weekly_net,week:competition_weeks(number,label),challenger:profiles!challenges_challenger_id_fkey(display_name,crest_url),opponent:profiles!challenges_opponent_id_fkey(display_name,crest_url)").or(`challenger_id.eq.${id},opponent_id.eq.${id}`).not("settled_at","is",null).order("created_at",{ascending:false}),
     supabase.from("player_wall_posts").select("id,author_user_id,body,created_at,author:profiles!player_wall_posts_author_user_id_fkey(display_name,crest_url)").eq("target_user_id",id).order("created_at",{ascending:false}),
     supabase.from("profiles").select("is_admin").eq("id",user.id).single(),
   ]);if(!profile)notFound();
@@ -39,20 +46,31 @@ export default async function PlayerPage({params,searchParams}:{params:Promise<{
   const weekly=((submissions??[]) as unknown as Submission[]).sort((a,b)=>(b.week?.number??0)-(a.week?.number??0));
   const resolvedPicks=weekly.flatMap(submission=>submission.picks??[]).filter(pick=>pick.is_correct!==null);const correct=resolvedPicks.filter(pick=>pick.is_correct).length;const accuracy=resolvedPicks.length?`${((correct/resolvedPicks.length)*100).toFixed(1)}%`:"—";
   const weeklyReturns=weekly.flatMap(submission=>submission.picks??[]).reduce((sum,pick)=>sum+(pickReturn(pick)??0),0);const fullScore=score(overallRows,id);const adjustments=fullScore-weeklyReturns;
+  const challenges=((challengeData??[]) as unknown as Challenge[]).map(challenge=>{
+    const isChallenger=challenge.challenger_id===id;
+    const playerNet=Number(isChallenger?challenge.challenger_weekly_net:challenge.opponent_weekly_net);
+    const opponentNet=Number(isChallenger?challenge.opponent_weekly_net:challenge.challenger_weekly_net);
+    const opponentId=isChallenger?challenge.opponent_id:challenge.challenger_id;
+    const opponent=isChallenger?challenge.opponent:challenge.challenger;
+    const result=playerNet>opponentNet?"win":playerNet<opponentNet?"loss":"draw";
+    return {...challenge,playerNet,opponentNet,opponentId,opponent,result};
+  });
+  const challengeWins=challenges.filter(challenge=>challenge.result==="win").length;const challengeLosses=challenges.filter(challenge=>challenge.result==="loss").length;const challengeDraws=challenges.filter(challenge=>challenge.result==="draw").length;const challengePoints=(challengeWins-challengeLosses)*10;
   const posts=(wallData??[]) as unknown as WallPost[];const canModerate=Boolean(viewer?.is_admin)||user.id===id;
   return <AppShell><main className="content player-page">
     <Link className="player-back" href="/clubhouse"><ArrowLeft size={16}/>Back to the Clubhouse</Link>
     <section className="card player-page-hero"><div className="player-page-crest"><ClubCrest seed={profile.id} label={profile.display_name} imageUrl={profile.crest_url} size="xl"/></div><div className="player-page-intro"><p className="eyebrow">League member · #{rank}</p><h1>{profile.display_name}</h1><p className="player-page-team">{profile.favorite_team||"Undeclared allegiance"}</p>{profile.motto&&<blockquote>“{profile.motto}”</blockquote>}<p className="player-page-bio">{profile.bio||"Scouting report pending."}</p>{user.id===id&&<Link className="secondary player-edit-link" href="/profile">Edit my player card</Link>}</div></section>
-    <section className="player-page-stats" aria-label={`${profile.display_name} league statistics`}><div className="card"><span>Overall rank</span><b>#{rank}</b></div><div className="card"><span>Full score</span><b>{points(fullScore)}</b></div><div className="card"><span>First / Second</span><b>{points(score((first??[]) as Standing[],id))} / {points(score((second??[]) as Standing[],id))}</b></div><div className="card"><span>Pick accuracy</span><b>{accuracy}</b><small>{correct} of {resolvedPicks.length}</small></div></section>
+    <section className="player-page-stats" aria-label={`${profile.display_name} league statistics`}><div className="card"><span>Overall rank</span><b>#{rank}</b></div><div className="card"><span>Full score</span><b>{points(fullScore)}</b></div><div className="card"><span>First / Second</span><b>{points(score((first??[]) as Standing[],id))} / {points(score((second??[]) as Standing[],id))}</b></div><div className="card"><span>Pick accuracy</span><b>{accuracy}</b><small>{correct} of {resolvedPicks.length}</small></div><div className="card h2h-stat"><span>Head to head</span><b>{challengeWins}–{challengeLosses}{challengeDraws?`–${challengeDraws}`:""}</b><small>{points(challengePoints)} challenge pts</small></div></section>
     <section className="player-picks-section">
       <div className="section-label player-picks-heading"><div><p className="eyebrow">Picks &amp; points</p><h2>How {profile.display_name} got here</h2><p className="subtle">Every revealed pick, its locked price, and the points it returned.</p></div><Trophy size={22}/></div>
       <div className="card player-score-explainer"><div><span>Match returns</span><b>{points(weeklyReturns)}</b></div><span className="score-operator">+</span><div><span>Other adjustments</span><b>{points(adjustments)}</b></div><span className="score-operator">=</span><div className="score-total"><span>Full score</span><b>{points(fullScore)}</b></div><p>Other adjustments include season competitions, challenges, and streak bonuses.</p></div>
+      {challenges.length>0&&<section className="card player-challenge-record"><header><div><p className="eyebrow">Head to head</p><h3>{challengeWins} wins · {challengeLosses} losses{challengeDraws?` · ${challengeDraws} draws`:""}</h3></div><div className={`challenge-net ${challengePoints>=0?"positive":"negative"}`}><Swords size={17}/><span>{challengePoints>0?"+":""}{points(challengePoints)} pts</span></div></header><div className="player-challenge-list">{challenges.map(challenge=><div className="player-challenge-row" key={challenge.id}><span className="challenge-week">W{challenge.week?.number??"—"}</span><Link href={`/players/${challenge.opponentId}`}><ClubCrest seed={challenge.opponentId} label={challenge.opponent?.display_name??"Player"} imageUrl={challenge.opponent?.crest_url} size="sm"/><span>vs <b>{challenge.opponent?.display_name??"Player"}</b></span></Link><span className="challenge-score">{points(challenge.playerNet)}–{points(challenge.opponentNet)}</span><strong className={challenge.result}>{challenge.result==="win"?"Won +10":challenge.result==="loss"?"Lost −10":"Draw 0"}</strong></div>)}</div></section>}
       <div className="player-week-list">{weekly.length?weekly.map(submission=>{
         const weekReturn=(submission.picks??[]).reduce((sum,pick)=>sum+(pickReturn(pick)??0),0);const pending=(submission.picks??[]).some(pick=>pick.is_correct===null);
-        return <article className="card player-week-card" key={submission.id}><header><div><span className="week-kicker">Week {submission.week?.number??"—"}</span><h3>{submission.week?.label??"Competition week"}</h3></div><div className={`week-return ${pending?"live":"final"}`}><small>{pending?"Return so far":"Final return"}</small><b>{points(weekReturn)} pts</b></div></header>
+        return <details className="card player-week-card" key={submission.id}><summary><div className="week-title"><span className="week-kicker">Week {submission.week?.number??"—"}</span><h3>{submission.week?.label??"Competition week"}</h3></div><div className="week-pick-preview">{(submission.picks??[]).map(pick=><span className={pick.is_correct===true?"won":pick.is_correct===false?"lost":"pending"} key={pick.id}>{pick.is_correct===true?<CheckCircle2 size={13}/>:pick.is_correct===false?<XCircle size={13}/>:<Clock3 size={13}/>}<b>{selectionLabel(pick)}</b></span>)}</div><div className={`week-return ${pending?"live":"final"}`}><small>{pending?"Return so far":"Final return"}</small><b>{points(weekReturn)} pts</b></div><ChevronDown className="week-expand" size={18}/></summary>
           <div className="player-pick-list">{(submission.picks??[]).map(pick=>{const returned=pickReturn(pick);return <div className="player-pick-row" key={pick.id}><div className={`pick-result-icon ${pick.is_correct===true?"won":pick.is_correct===false?"lost":"pending"}`}>{pick.is_correct===true?<CheckCircle2 size={18}/>:pick.is_correct===false?<XCircle size={18}/>:<Clock3 size={18}/>}</div><div className="pick-summary"><span>{pick.kind==="gotw"?"Game of the Week":"Own choice"}</span><b>{selectionLabel(pick)}</b><small>{pick.fixture?.home?.name??"Home"} vs {pick.fixture?.away?.name??"Away"}</small></div><div className="pick-math"><span>{points(Number(pick.stake))} pts × {Number(pick.odds).toFixed(2)}</span><b>{returned===null?"Pending":`${points(returned)} pts`}</b></div></div>})}</div>
           {submission.commentary&&<blockquote className="player-week-comment">“{submission.commentary}”</blockquote>}
-        </article>;
+        </details>;
       }):<div className="card player-picks-empty"><Clock3 size={20}/><div><b>No revealed picks yet.</b><p>{user.id===id?"Your submitted picks will appear here.":"This player’s picks become visible when the market locks."}</p></div></div>}</div>
     </section>
     <section className="player-wall-section"><div className="section-label"><div><p className="eyebrow">Open season</p><h2>{profile.display_name}&apos;s wall</h2><p className="subtle">Leave praise, analysis, or completely unnecessary provocation.</p></div><MessageCircle size={22}/></div>

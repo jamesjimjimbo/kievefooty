@@ -806,6 +806,8 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .player-page-stats span { color: var(--muted); font-size: 9px; font-weight: 850; text-transform: uppercase; }
 .player-page-stats b { font-size: 20px; letter-spacing: -.04em; }
 .player-page-stats small { color: var(--muted); font-size: 8px; }
+.player-page-stats .h2h-stat { grid-column: 1 / -1; background: linear-gradient(120deg,#f4fffc,#fff); }
+.player-page-stats .h2h-stat b { color: #008879; }
 .player-picks-section { margin-top: 30px; }
 .player-picks-heading { align-items: flex-end; }
 .player-picks-heading svg { color: var(--primary); }
@@ -818,10 +820,31 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .player-score-explainer .score-total { grid-column: 1 / -1; padding-top: 9px; border-top: 1px solid rgba(91,67,214,.16); }
 .player-score-explainer .score-total b { color: var(--primary); font-size: 24px; }
 .player-score-explainer p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 8px; line-height: 1.45; }
+.player-challenge-record { overflow: hidden; margin-top: 10px; padding: 0; border-color: #bcebe3; box-shadow: none; }
+.player-challenge-record > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: linear-gradient(110deg,#eafff9,#f8fffd); }
+.player-challenge-record h3 { margin: 2px 0 0; font-size: 14px; }
+.challenge-net { display: flex; align-items: center; gap: 6px; padding: 7px 9px; border-radius: 999px; font-size: 10px; font-weight: 900; }
+.challenge-net.positive { color: #00796c; background: #d8f8f1; }.challenge-net.negative { color: #ad3045; background: #fff0f2; }
+.player-challenge-list { display: grid; }
+.player-challenge-row { display: grid; grid-template-columns: auto minmax(0,1fr) auto auto; align-items: center; gap: 9px; padding: 10px 14px; border-top: 1px solid var(--line); }
+.challenge-week { color: var(--primary); font-size: 8px; font-weight: 900; text-transform: uppercase; }
+.player-challenge-row > a { min-width: 0; display: flex; align-items: center; gap: 7px; color: var(--ink); font-size: 9px; }
+.player-challenge-row > a span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.challenge-score { color: var(--muted); font-size: 9px; font-weight: 800; }
+.player-challenge-row > strong { min-width: 55px; padding: 5px 7px; border-radius: 8px; text-align: center; font-size: 8px; text-transform: uppercase; }
+.player-challenge-row > strong.win { color: #00796c; background: #dcfaf4; }.player-challenge-row > strong.loss { color: #b43248; background: #fff0f2; }.player-challenge-row > strong.draw { color: var(--muted); background: #f3f2f8; }
 .player-week-list { display: grid; gap: 10px; margin-top: 11px; }
 .player-week-card { overflow: hidden; padding: 0; box-shadow: none; }
-.player-week-card > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 14px; border-bottom: 1px solid var(--line); background: #faf9ff; }
+.player-week-card > summary { display: grid; grid-template-columns: minmax(0,1fr) auto auto; align-items: center; gap: 10px; padding: 11px 14px; cursor: pointer; list-style: none; background: #faf9ff; }
+.player-week-card > summary::-webkit-details-marker { display: none; }
+.player-week-card[open] > summary { border-bottom: 1px solid var(--line); }
+.week-title { min-width: 0; }
 .player-week-card h3 { margin: 2px 0 0; font-size: 14px; }
+.week-pick-preview { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 6px; }
+.week-pick-preview > span { min-width: 0; display: inline-flex; align-items: center; gap: 4px; padding: 5px 7px; border-radius: 8px; font-size: 8px; }
+.week-pick-preview > span b { overflow: hidden; max-width: 140px; text-overflow: ellipsis; white-space: nowrap; }
+.week-pick-preview > span.won { color: #00796c; background: #dcfaf4; }.week-pick-preview > span.lost { color: #b43248; background: #fff0f2; }.week-pick-preview > span.pending { color: var(--primary); background: var(--lavender); }
+.week-expand { color: var(--muted); transition: transform .18s ease; }.player-week-card[open] .week-expand { transform: rotate(180deg); }
 .week-kicker { color: var(--primary); font-size: 8px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
 .week-return { flex: 0 0 auto; display: grid; justify-items: end; gap: 2px; }
 .week-return small { color: var(--muted); font-size: 7px; font-weight: 850; text-transform: uppercase; }
@@ -982,10 +1005,13 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
   .player-page-hero { grid-template-columns: 300px 1fr; align-items: stretch; }
   .player-page-crest { min-height: 330px; }
   .player-page-intro { align-self: center; padding: 28px 30px 28px 0; }
-  .player-page-stats { grid-template-columns: repeat(4,1fr); }
+  .player-page-stats { grid-template-columns: repeat(5,1fr); }
+  .player-page-stats .h2h-stat { grid-column: auto; }
   .player-score-explainer { grid-template-columns: 1fr auto 1fr auto 1fr; padding: 16px 18px; }
   .player-score-explainer .score-total { grid-column: auto; padding: 0; border: 0; }
   .player-score-explainer p { grid-column: 1 / -1; }
+  .player-week-card > summary { grid-template-columns: 135px minmax(0,1fr) auto auto; }
+  .week-pick-preview { grid-column: auto; flex-wrap: nowrap; }
   .player-card-grid { grid-template-columns: repeat(3,1fr); }
   .profile-nudge { grid-template-columns: auto 1fr auto; }.profile-nudge .secondary { grid-column: auto; }
   .conversation-list { grid-template-columns: 1fr 1fr; align-items: start; }.conversation-list.compact { grid-template-columns: 1fr 1fr; }
