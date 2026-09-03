@@ -24,7 +24,7 @@ Open `http://localhost:3000`. Protected pages require a confirmed Supabase accou
 
 The browser receives only the publishable key. Automatic result checks use `SUPABASE_SERVICE_ROLE_KEY` exclusively in the protected server cron route; it must never use a `NEXT_PUBLIC_` prefix. Admin status, deadlines, visibility, challenge uniqueness and ledger access are enforced in Postgres/RLS.
 
-Weekly results are fetched from football-data.org each evening through the Vercel cron route at `/api/cron/results`. Set `FOOTBALL_DATA_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `CRON_SECRET` in Vercel. The settlement function is idempotent: corrected scores rebuild weekly wager entries, challenge transfers, and Game-of-the-Week streak bonuses without duplicating points. Admins can also run **Check now** or save a corrected final score from the Admin desk.
+Weekly results are fetched from football-data.org through the scheduled Vercel cron route at `/api/cron/results`. The same run adds clearly labelled default picks for members who missed the deadline. Set `FOOTBALL_DATA_API_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `CRON_SECRET` in Vercel. Both auto-picking and settlement are idempotent: corrected scores rebuild weekly wager entries, challenge transfers, and Game-of-the-Week streak bonuses without duplicating points. Admins can also run **Check now** or save a corrected final score from the Admin desk.
 
 ## Checks
 
@@ -49,4 +49,4 @@ Import `jamesjimjimbo/kievefooty` into Vercel, add the Supabase public variables
 - `supabase/migrations`: schema, constraints, triggers and RLS
 - `docs/GAME_SPEC.md`: canonical game rules
 
-Assumptions: stakes use whole points in normal weeks; Competition Week numbers may be null for breaks; this remains one fixed competition; demo dates/data are illustrative; scheduled auto-picks are represented as an idempotent domain/admin operation but require a future cron runner.
+Assumptions: stakes use whole points in normal weeks; Competition Week numbers may be null for breaks; this remains one fixed competition; demo dates/data are illustrative.

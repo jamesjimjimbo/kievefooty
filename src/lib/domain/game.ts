@@ -24,9 +24,9 @@ export function performance(entries:LedgerEntry[],half?:"first"|"second",weekHal
 export function favorite(f:Fixture):Outcome{return (Object.entries(f.odds) as [Outcome,number][]).sort((a,b)=>a[1]-b[1])[0][0]}
 export function createAutoPicks(all:Fixture[]){
   const gotw=all.find(f=>f.gotw);if(!gotw)throw new Error("GOTW missing");
-  const other=all.filter(f=>!f.gotw).sort((a,b)=>Math.min(...Object.values(a.odds))-Math.min(...Object.values(b.odds)))[0];
+  const other=all.find(f=>!f.gotw);
   if(!other)throw new Error("Eligible fixture missing");
-  return [{fixtureId:gotw.id,outcome:favorite(gotw),stake:5,source:"auto" as const},{fixtureId:other.id,outcome:favorite(other),stake:5,source:"auto" as const}];
+  return [{fixtureId:gotw.id,outcome:"draw" as const,stake:5,source:"auto" as const},{fixtureId:other.id,outcome:"home" as const,stake:5,source:"auto" as const}];
 }
 export function settleOnce(existing:LedgerEntry[],candidate:LedgerEntry){
   return existing.some(e=>e.type===candidate.type&&e.referenceId===candidate.referenceId)?existing:[...existing,candidate];

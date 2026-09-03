@@ -8,8 +8,8 @@ type ResultWeek={
 };
 
 export type ResultSyncSummary={
-  matchedFixtures:number;finalFixtures:number;settledWeeks:number;
-  weeks:{id:string;label:string;matched:number;remaining:number;settled:boolean}[];
+  matchedFixtures:number;finalFixtures:number;settledWeeks:number;autoSubmissions:number;
+  weeks:{id:string;label:string;matched:number;remaining:number;settled:boolean;autoSubmitted:number}[];
 };
 
 export async function syncWeeklyResults(supabase:SupabaseClient,apiKey:string):Promise<ResultSyncSummary>{
@@ -28,9 +28,16 @@ export async function syncWeeklyResults(supabase:SupabaseClient,apiKey:string):P
       .order("start_date");
     if(error)throw new Error(error.message);
     const weeks=(data??[]) as unknown as ResultWeek[];
-    const summary:ResultSyncSummary={matchedFixtures:0,finalFixtures:0,settledWeeks:0,weeks:[]};
+    const summary:ResultSyncSummary={matchedFixtures:0,finalFixtures:0,settledWeeks:0,autoSubmissions:0,weeks:[]};
 
     for(const week of weeks){
+      let autoSubmitted=0;
+      if(week.status!=="settled"){
+        const {data:autoPickResult,error:autoPickError}=await supabase.rpc("auto_submit_missing_weekly_picks",{p_week_id:week.id});
+        if(autoPickError)throw new Error(`Could not create auto-picks for ${week.label}: ${autoPickError.message}`);
+        autoSubmitted=Number((autoPickResult as {created?:number}|null)?.created??0);
+        summary.autoSubmissions+=autoSubmitted;
+      }
       const providerMatches=await fetchCompetitionMatches({
         competition:week.competition_code,dateFrom:week.start_date,dateTo:week.end_date,apiKey,
       });
@@ -56,7 +63,7 @@ export async function syncWeeklyResults(supabase:SupabaseClient,apiKey:string):P
       if(settlementError)throw new Error(`Could not settle ${week.label}: ${settlementError.message}`);
       const result=(settlement??{}) as {settled?:boolean;remaining?:number};
       if(result.settled)summary.settledWeeks+=1;
-      summary.weeks.push({id:week.id,label:week.label,matched,remaining:Number(result.remaining??0),settled:Boolean(result.settled)});
+      summary.weeks.push({id:week.id,label:week.label,matched,remaining:Number(result.remaining??0),settled:Boolean(result.settled),autoSubmitted});
     }
 
     const {error:finishError}=await supabase.from("result_sync_runs").update({

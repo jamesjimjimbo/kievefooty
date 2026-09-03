@@ -10,7 +10,7 @@ The season is scripted as Competition Weeks, independent of official matchweek n
 
 Each player picks Home, Draw or Away for the admin-selected Game of the Week and one other eligible fixture. Stakes must be integers of at least 1 and total exactly 10. A high bankroll does not increase that allocation. Both choices and stakes lock together at the week deadline. Before lock, only the owner and admins see picks; after lock, the league may see them.
 
-If a player is incomplete at lock, an idempotent job creates two auto-picks: 5 on the shortest-priced GOTW outcome and 5 on the shortest-priced outcome across all non-GOTW fixtures. Draws may be favorites.
+If a player has not submitted by lock, the scheduled idempotent job creates two clearly labelled auto-picks: 5 on the draw in the GOTW and 5 on the home team in the earliest-kicking-off eligible non-GOTW fixture. Only members who joined before the deadline are included.
 
 ## Settlement and ledger
 
