@@ -67,6 +67,8 @@ const historyColors=["#4f3bd8","#ff6678","#0f9eb7","#ff9a3c","#7c3ff0","#0a8f78"
 
 function StandingsHistory({rows}:{rows:StandingHistoryRow[]}){
   const [view,setView]=useState<"full_score"|"first_score"|"second_score"|"accuracy_rate">("full_score");
+  const [selectedPlayer,setSelectedPlayer]=useState<string|null>(null);
+  const [hoveredPoint,setHoveredPoint]=useState<{playerId:string;weekNumber:number|null}|null>(null);
   const modes=[
     {key:"full_score" as const,label:"Full",title:"Full Competition",unit:"points"},
     {key:"first_score" as const,label:"First",title:"First Half",unit:"points"},
@@ -85,10 +87,15 @@ function StandingsHistory({rows}:{rows:StandingHistoryRow[]}){
   const x=(index:number)=>left+(weeks.length===1?0:(index/(weeks.length-1))*(width-left-right));
   const y=(score:number)=>top+((max-score)/(max-min))*(height-top-bottom);
   const ticks=Array.from({length:5},(_,index)=>max-(index/4)*(max-min));
+  const highlightedPlayer=selectedPlayer??hoveredPoint?.playerId??null;
+  const detailPlayer=players.find(player=>player.id===highlightedPlayer);
+  const detailWeek=hoveredPoint?.weekNumber===null||hoveredPoint?.weekNumber===undefined?weeks.at(-1):weeks.find(week=>week.number===hoveredPoint.weekNumber);
+  const detailScore=detailPlayer&&detailWeek?scoreMap.get(`${detailPlayer.id}:${detailWeek.number}`)??0:null;
   return <section className="standings-history card">
-    <header><div><p className="eyebrow">Week by week</p><h2>{mode.title} race</h2><p>Hover or press a point to see each player&apos;s running total.</p></div></header>
-    <div className="history-modes" aria-label="Chart competition">{modes.map(item=><button type="button" className={view===item.key?"active":""} onClick={()=>setView(item.key)} key={item.key}>{item.label}</button>)}</div>
-    <div className="history-legend">{players.map((player,index)=><span key={player.id}><i style={{background:historyColors[index%historyColors.length]}}/>{player.name}</span>)}</div>
+    <header><div><p className="eyebrow">Week by week</p><h2>{mode.title} race</h2><p>Hover to identify a player. Click a name or line to isolate it; click again to reset.</p></div></header>
+    <div className="history-modes" aria-label="Chart competition">{modes.map(item=><button type="button" className={view===item.key?"active":""} onClick={()=>{setView(item.key);setHoveredPoint(null)}} key={item.key}>{item.label}</button>)}</div>
+    <div className="history-legend">{players.map((player,index)=><button type="button" className={`${selectedPlayer===player.id?"selected":""} ${highlightedPlayer&&highlightedPlayer!==player.id?"dimmed":""}`} onClick={()=>setSelectedPlayer(current=>current===player.id?null:player.id)} onMouseEnter={()=>setHoveredPoint({playerId:player.id,weekNumber:null})} onMouseLeave={()=>setHoveredPoint(null)} onFocus={()=>setHoveredPoint({playerId:player.id,weekNumber:null})} onBlur={()=>setHoveredPoint(null)} aria-pressed={selectedPlayer===player.id} key={player.id}><i style={{background:historyColors[index%historyColors.length]}}/>{player.name}</button>)}</div>
+    <div className={`history-chart-readout ${detailPlayer?"visible":""}`} aria-live="polite">{detailPlayer&&detailWeek&&detailScore!==null?<><i style={{background:historyColors[players.findIndex(player=>player.id===detailPlayer.id)%historyColors.length]}}/><b>{detailPlayer.name}</b><span>Week {detailWeek.number} · {view==="accuracy_rate"?`${detailScore}% correct`:`${detailScore} ${mode.unit}`}</span>{selectedPlayer===detailPlayer.id&&<small>Locked on</small>}</>:<span>Hover over a line or player name</span>}</div>
     <div className="history-chart-scroll">
       <svg className="history-chart" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${mode.title} by Competition Week`}>
         {ticks.map((tick,index)=>{const tickY=y(tick);return <g key={index}><line x1={left} x2={width-right} y1={tickY} y2={tickY}/><text x={left-8} y={tickY+3} textAnchor="end">{Math.round(tick)}{view==="accuracy_rate"?"%":""}</text></g>})}
@@ -97,7 +104,9 @@ function StandingsHistory({rows}:{rows:StandingHistoryRow[]}){
           const points=weeks.map((week,index)=>({week,index,score:scoreMap.get(`${player.id}:${week.number}`)??0}));
           const path=points.map((point,index)=>`${index?"L":"M"} ${x(point.index)} ${y(point.score)}`).join(" ");
           const color=historyColors[playerIndex%historyColors.length];
-          return <g className="history-series" key={player.id}><path d={path} style={{stroke:color}}/>{points.map(point=><circle cx={x(point.index)} cy={y(point.score)} r="5" style={{fill:color}} tabIndex={0} key={point.week.number}><title>{player.name} - {point.week.label}: {view==="accuracy_rate"?`${point.score}% correct`:`${point.score} ${mode.unit}`}</title></circle>)}</g>;
+          const isDimmed=Boolean(highlightedPlayer&&highlightedPlayer!==player.id);const isActive=highlightedPlayer===player.id;
+          const activate=(weekNumber:number|null)=>setHoveredPoint({playerId:player.id,weekNumber});
+          return <g className={`history-series ${isActive?"active":""} ${isDimmed?"dimmed":""}`} key={player.id}><path className="history-line" d={path} style={{stroke:color}}/><path className="history-hit-line" d={path} onMouseEnter={()=>activate(null)} onMouseLeave={()=>setHoveredPoint(null)} onClick={()=>setSelectedPlayer(current=>current===player.id?null:player.id)}/>{points.map(point=><circle cx={x(point.index)} cy={y(point.score)} r="5" style={{fill:color}} tabIndex={0} onMouseEnter={()=>activate(point.week.number)} onMouseLeave={()=>setHoveredPoint(null)} onFocus={()=>activate(point.week.number)} onBlur={()=>setHoveredPoint(null)} onClick={()=>setSelectedPlayer(current=>current===player.id?null:player.id)} key={point.week.number}><title>{player.name} - {point.week.label}: {view==="accuracy_rate"?`${point.score}% correct`:`${point.score} ${mode.unit}`}</title></circle>)}</g>;
         })}
       </svg>
     </div>
