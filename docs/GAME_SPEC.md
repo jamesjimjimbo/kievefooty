@@ -12,6 +12,8 @@ Each player picks Home, Draw or Away for the admin-selected Game of the Week and
 
 If a player has not submitted by lock, the scheduled idempotent job creates two clearly labelled auto-picks: 5 on the draw in the GOTW and 5 on the home team in the earliest-kicking-off eligible non-GOTW fixture. Only members who joined before the deadline are included.
 
+Before automatic defaults were introduced, members who missed Competition Week 2 received a one-time 8-point expected-value credit. The credit does not count as a correct or incorrect pick in the accuracy competition.
+
 ## Settlement and ledger
 
 Decimal odds use net result: a win is `stake × odds − stake`; a loss is `−stake`. Settlement creates unique ledger records, so reruns cannot duplicate points. The ledger is authoritative and append-only; bankroll is the sum of all balance-affecting entries.
