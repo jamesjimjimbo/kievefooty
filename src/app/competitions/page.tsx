@@ -76,12 +76,16 @@ const TEAM_MARKERS:Record<string,{symbol:string;label:string;className:string}>=
   "fifth-to-seventh":{symbol:"T7",label:"Fifth–seventh",className:"top-seven"},
   relegation:{symbol:"R",label:"Relegated",className:"relegated"},
   "manager-exit":{symbol:"S",label:"Manager sacked",className:"sacked"},
-  "carabao-cup-winner":{symbol:"LC",label:"Carabao Cup winner",className:"cup-winner"},
-  "fa-cup-winner":{symbol:"FA",label:"FA Cup winner",className:"fa-cup-winner"},
+};
+
+const CUP_MARKETS:Record<string,{eyebrow:string;title:string;symbol:string;label:string;className:string}>={
+  "carabao-cup-winner":{eyebrow:"Carabao Cup",title:"Carabao Cup winner picks",symbol:"LC",label:"Carabao Cup winner",className:"cup-winner"},
+  "fa-cup-winner":{eyebrow:"FA Cup",title:"FA Cup winner picks",symbol:"FA",label:"FA Cup winner",className:"fa-cup-winner"},
 };
 
 function PredictionWall({markets,profiles}:{markets:RevealedMarket[];profiles:ProfileRow[]}){
   const teamMarkets=markets.filter(market=>TEAM_MARKERS[market.slug]);
+  const cupMarkets=markets.filter(market=>CUP_MARKETS[market.slug]);
   const goldenBoot=markets.find(market=>market.slug==="golden-boot");
   const entrants=profiles.length?profiles:uniqueEntrants(markets);
   const teams=[...new Set(teamMarkets.flatMap(market=>market.options))].sort((a,b)=>a.localeCompare(b));
@@ -101,11 +105,22 @@ function PredictionWall({markets,profiles}:{markets:RevealedMarket[];profiles:Pr
     <div className="section-label"><div><p className="eyebrow">Cards on the table</p><h2>League prediction grid</h2><p className="prediction-wall-intro">Every club call in one view. Scroll sideways to see the whole league.</p></div></div>
     <div className="prediction-legend">{Object.values(TEAM_MARKERS).map(marker=><span key={marker.symbol}><i className={marker.className}>{marker.symbol}</i>{marker.label}</span>)}</div>
     <PredictionMatrix title="Premier League predictions" rowLabel="Club" rows={teams} entrants={entrants} renderCell={(team,entrant)=><MarkerStack markers={teamPicks.get(`${entrant.id}:${team}`)??[]}/>}/>
+    {cupMarkets.map(market=><CupPredictionGrid key={market.id} market={market} entrants={entrants}/>)}
     {goldenBoot&&<div className="golden-boot-grid">
       <div className="section-label"><div><p className="eyebrow">Golden Boot</p><h2>Top-scorer picks</h2><p className="prediction-wall-intro">Only selected players are shown.</p></div></div>
       <PredictionMatrix title="Golden Boot predictions" rowLabel="Player" rows={goldenBootPlayers} entrants={entrants} renderCell={(player,entrant)=>goldenBootPicks.has(`${entrant.id}:${player}`)?<span className="golden-boot-pick" title="Golden Boot pick">⚽</span>:null}/>
     </div>}
   </section>;
+}
+
+function CupPredictionGrid({market,entrants}:{market:RevealedMarket;entrants:ProfileRow[]}){
+  const presentation=CUP_MARKETS[market.slug];
+  const clubs=[...new Set(market.entries.flatMap(entry=>entry.selections))].sort((a,b)=>a.localeCompare(b));
+  const picks=new Set(market.entries.flatMap(entry=>entry.selections.map(club=>`${entry.userId}:${club}`)));
+  return <div className="domestic-cup-grid">
+    <div className="section-label"><div><p className="eyebrow">{presentation.eyebrow}</p><h2>{presentation.title}</h2><p className="prediction-wall-intro">Only clubs selected by the league are shown.</p></div></div>
+    <PredictionMatrix title={presentation.title} rowLabel="Club" rows={clubs} entrants={entrants} renderCell={(club,entrant)=><MarkerStack markers={picks.has(`${entrant.id}:${club}`)?[presentation]:[]}/>}/>
+  </div>;
 }
 
 function uniqueEntrants(markets:RevealedMarket[]):ProfileRow[]{

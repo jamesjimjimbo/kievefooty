@@ -643,7 +643,7 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .prediction-matrix tbody tr:nth-child(even) td,.prediction-matrix tbody tr:nth-child(even) th { background: #fbfaff; }
 .prediction-matrix tbody tr:hover td,.prediction-matrix tbody tr:hover th { background: #f3f0ff; }
 .prediction-marker-stack { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 3px; }
-.golden-boot-grid { margin-top: 27px; }
+.domestic-cup-grid,.golden-boot-grid { margin-top: 27px; }
 .golden-boot-pick { width: 25px; height: 25px; display: inline-grid; place-items: center; border-radius: 50%; background: #fff1be; box-shadow: inset 0 0 0 1px #f2d26a; font-size: 13px; }
 .prediction-empty { height: 70px!important; color: var(--muted); font-size: 9px; text-align: center; }
 
