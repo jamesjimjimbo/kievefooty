@@ -6,8 +6,11 @@ export const dynamic="force-dynamic";
 export const maxDuration=30;
 
 export async function GET(request:NextRequest){
-  const secret=process.env.CRON_SECRET;
-  if(!secret||request.headers.get("authorization")!==`Bearer ${secret}`){
+  const authorization=request.headers.get("authorization");
+  const acceptedSecrets=[process.env.CRON_SECRET,process.env.RESULT_SYNC_SECRET]
+    .filter((secret):secret is string=>Boolean(secret));
+  const isAuthorized=acceptedSecrets.some((secret)=>authorization===`Bearer ${secret}`);
+  if(!isAuthorized){
     return NextResponse.json({error:"Unauthorized"},{status:401});
   }
   const apiKey=process.env.FOOTBALL_DATA_API_KEY;
