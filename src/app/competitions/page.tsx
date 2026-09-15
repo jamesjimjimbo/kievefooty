@@ -17,6 +17,7 @@ type MarketRow={
 };
 type EntryRow={market_id:string;user_id:string;option_ids:string[];profiles:{display_name:string;crest_url:string|null}|null};
 type ProfileRow={id:string;display_name:string;crest_url:string|null};
+type LeagueTableRow={captured_at:string;position:number;team_name:string;played:number;points:number};
 type RevealedMarket={
   id:string;slug:string;title:string;options:string[];
   entries:{userId:string;name:string;crestUrl:string|null;selections:string[]}[];
@@ -27,10 +28,11 @@ export default async function CompetitionsPage(){
   if(!supabase)redirect("/auth/sign-in");
   const {data:{user}}=await supabase.auth.getUser();
   if(!user)redirect("/auth/sign-in");
-  const [{data:marketData,error},{data:entryData},{data:profileData}]=await Promise.all([
+  const [{data:marketData,error},{data:entryData},{data:profileData},{data:tableData}]=await Promise.all([
     supabase.from("season_markets").select("id,slug,title,description,selection_help,min_selections,max_selections,payout_label,lock_at,status,season_market_options(id,label,sort_order,odds)").order("display_order"),
     supabase.from("season_market_entries").select("market_id,user_id,option_ids,profiles(display_name,crest_url)"),
     supabase.from("profiles").select("id,display_name,crest_url").order("display_name"),
+    supabase.from("league_table_snapshots").select("captured_at,position,team_name,played,points").order("captured_at",{ascending:false}).order("position").limit(20),
   ]);
   if(error)return <AppShell><main className="content"><div className="page-head"><div><p className="eyebrow">Season-long</p><h1>Competitions</h1></div></div><div className="notice">Season competitions are ready in the app, but the database update still needs to be applied.</div></main></AppShell>;
   const allEntries=(entryData??[]) as unknown as EntryRow[];
@@ -62,7 +64,7 @@ export default async function CompetitionsPage(){
     });
   return <AppShell><main className="content content-wide competitions-page">
     <div className="page-head"><div><p className="eyebrow">The long game</p><h1>Season competitions</h1><p className="subtle">{open.length?"Make the big calls now.":"The league has made its calls. Track every prediction below."}</p></div>{open.length>0&&<span className="pill live"><Sparkles size={13}/>{open.length} open</span>}</div>
-    {revealed.length>0&&<PredictionWall markets={revealed} profiles={(profileData??[]) as ProfileRow[]}/>}
+    {revealed.length>0&&<PredictionWall markets={revealed} profiles={(profileData??[]) as ProfileRow[]} leagueTable={(tableData??[]) as LeagueTableRow[]}/>}
     {entryMarkets.length>0&&<>
       <div className="section-label competition-picks-heading"><div><p className="eyebrow">{open.length?"Your entry card":"Coming later"}</p><h2>{open.length?"Make your picks":"Future competitions"}</h2><p className="subtle">{open.length?"Open competitions can be saved or updated until their deadline.":"These markets will open closer to the action."}</p></div><ArrowDown size={19}/></div>
       <div className="market-grid">{entryMarkets.map(market=><SeasonMarketCard key={market.id} market={market}/>)}</div>
@@ -83,7 +85,7 @@ const CUP_MARKETS:Record<string,{eyebrow:string;title:string;symbol:string;label
   "fa-cup-winner":{eyebrow:"FA Cup",title:"FA Cup winner picks",symbol:"FA",label:"FA Cup winner",className:"fa-cup-winner"},
 };
 
-function PredictionWall({markets,profiles}:{markets:RevealedMarket[];profiles:ProfileRow[]}){
+function PredictionWall({markets,profiles,leagueTable}:{markets:RevealedMarket[];profiles:ProfileRow[];leagueTable:LeagueTableRow[]}){
   const teamMarkets=markets.filter(market=>TEAM_MARKERS[market.slug]);
   const cupMarkets=markets.filter(market=>CUP_MARKETS[market.slug]);
   const goldenBoot=markets.find(market=>market.slug==="golden-boot");
@@ -105,12 +107,48 @@ function PredictionWall({markets,profiles}:{markets:RevealedMarket[];profiles:Pr
     <div className="section-label"><div><p className="eyebrow">Cards on the table</p><h2>League prediction grid</h2><p className="prediction-wall-intro">Every club call in one view. Scroll sideways to see the whole league.</p></div></div>
     <div className="prediction-legend">{Object.values(TEAM_MARKERS).map(marker=><span key={marker.symbol}><i className={marker.className}>{marker.symbol}</i>{marker.label}</span>)}</div>
     <PredictionMatrix title="Premier League predictions" rowLabel="Club" rows={teams} entrants={entrants} renderCell={(team,entrant)=><MarkerStack markers={teamPicks.get(`${entrant.id}:${team}`)??[]}/>}/>
+    <CurrentTableProjection markets={teamMarkets} entrants={entrants} table={leagueTable}/>
     {cupMarkets.length>0&&<DomesticCupPredictionGrid markets={cupMarkets} entrants={entrants}/>}
     {goldenBoot&&<div className="golden-boot-grid">
       <div className="section-label"><div><p className="eyebrow">Golden Boot</p><h2>Top-scorer picks</h2><p className="prediction-wall-intro">Only selected players are shown.</p></div></div>
       <PredictionMatrix title="Golden Boot predictions" rowLabel="Player" rows={goldenBootPlayers} entrants={entrants} renderCell={(player,entrant)=>goldenBootPicks.has(`${entrant.id}:${player}`)?<span className="golden-boot-pick" title="Golden Boot pick">⚽</span>:null}/>
     </div>}
   </section>;
+}
+
+const POSITION_MARKETS:Record<string,{points:number;symbol:string;label:string;className:string}>={
+  champion:{points:100,...TEAM_MARKERS.champion},
+  "top-four":{points:50,...TEAM_MARKERS["top-four"]},
+  "fifth-to-seventh":{points:25,...TEAM_MARKERS["fifth-to-seventh"]},
+  relegation:{points:50,...TEAM_MARKERS.relegation},
+};
+
+function projectedMarket(position:number){
+  if(position===1)return "champion";
+  if(position>=2&&position<=4)return "top-four";
+  if(position>=5&&position<=7)return "fifth-to-seventh";
+  if(position>=18)return "relegation";
+  return null;
+}
+
+function CurrentTableProjection({markets,entrants,table}:{markets:RevealedMarket[];entrants:ProfileRow[];table:LeagueTableRow[]}){
+  const marketEntries=new Map(markets.map(market=>[market.slug,new Map(market.entries.map(entry=>[entry.userId,new Set(entry.selections)]))]));
+  const totals=new Map(entrants.map(entrant=>[entrant.id,table.reduce((sum,row)=>{
+    const slug=projectedMarket(row.position);if(!slug)return sum;
+    return sum+(marketEntries.get(slug)?.get(entrant.id)?.has(row.team_name)?POSITION_MARKETS[slug].points:0);
+  },0)]));
+  const capturedAt=table[0]?.captured_at;
+  return <div className="current-table-projection">
+    <div className="section-label"><div><p className="eyebrow">If the season ended today</p><h2>Current-table points</h2><p className="prediction-wall-intro">Position markets only. Totals assume the latest saved Premier League table is final; manager sack picks are excluded.</p></div>{capturedAt&&<span className="pill">Updated {new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(capturedAt))}</span>}</div>
+    <div className="card prediction-matrix-card">
+      <div className="prediction-matrix-scroll">
+        <table className="prediction-matrix current-table-matrix" aria-label="Projected position-market points if the Premier League table finished today">
+          <thead><tr><th scope="col">Current table</th>{entrants.map(entrant=><th scope="col" key={entrant.id}><Link href={`/players/${entrant.id}`}><ClubCrest seed={entrant.id} label={entrant.display_name} imageUrl={entrant.crest_url} size="sm"/><span>{entrant.display_name}</span><b>{totals.get(entrant.id)??0} pts</b></Link></th>)}</tr></thead>
+          <tbody>{table.length?table.map(row=>{const slug=projectedMarket(row.position);const marker=slug?POSITION_MARKETS[slug]:null;return <tr className={slug?`position-band ${marker?.className??""}`:""} key={`${row.captured_at}-${row.position}`}><th scope="row"><span className="table-position">{row.position}</span><span><b>{row.team_name}</b><small>{row.played} played · {row.points} pts</small></span>{marker&&<i className={marker.className} title={marker.label}>{marker.symbol}</i>}</th>{entrants.map(entrant=>{const scores=Boolean(slug&&marketEntries.get(slug)?.get(entrant.id)?.has(row.team_name));return <td className={scores?"projected-score-hit":""} key={entrant.id}>{scores&&marker?<span><i className={marker.className}>{marker.symbol}</i><b>+{marker.points}</b></span>:<small>—</small>}</td>})}</tr>}):<tr><td className="prediction-empty" colSpan={entrants.length+1}>The current Premier League table has not been loaded yet.</td></tr>}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>;
 }
 
 function DomesticCupPredictionGrid({markets,entrants}:{markets:RevealedMarket[];entrants:ProfileRow[]}){

@@ -643,7 +643,18 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .prediction-matrix tbody tr:nth-child(even) td,.prediction-matrix tbody tr:nth-child(even) th { background: #fbfaff; }
 .prediction-matrix tbody tr:hover td,.prediction-matrix tbody tr:hover th { background: #f3f0ff; }
 .prediction-marker-stack { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 3px; }
-.domestic-cup-grid,.golden-boot-grid { margin-top: 27px; }
+.current-table-projection,.domestic-cup-grid,.golden-boot-grid { margin-top: 27px; }
+.current-table-projection .section-label { align-items: end; }
+.current-table-matrix thead a b { color: var(--primary); font-size: 9px; }
+.current-table-matrix tbody th { display: grid; grid-template-columns: 22px 1fr auto; align-items: center; gap: 7px; }
+.current-table-matrix tbody th > span:nth-child(2) { display: grid; gap: 1px; }
+.current-table-matrix tbody th small { color: var(--muted); font-size: 7px; font-weight: 700; }
+.table-position { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; color: var(--muted); background: #f0eef8; font-size: 8px; }
+.current-table-matrix tbody th > i,.projected-score-hit i { display: inline-grid; place-items: center; min-width: 21px; height: 21px; padding: 0 4px; border-radius: 7px; font-size: 7px; font-style: normal; font-weight: 950; }
+.current-table-matrix tbody td > small { color: #c7c3d8; }
+.current-table-matrix .projected-score-hit { background: #eafff8 !important; }
+.projected-score-hit > span { display: inline-flex; align-items: center; gap: 4px; color: #007d6d; }
+.projected-score-hit b { font-size: 9px; }
 .golden-boot-pick { width: 25px; height: 25px; display: inline-grid; place-items: center; border-radius: 50%; background: #fff1be; box-shadow: inset 0 0 0 1px #f2d26a; font-size: 13px; }
 .prediction-empty { height: 70px!important; color: var(--muted); font-size: 9px; text-align: center; }
 

@@ -1,5 +1,6 @@
 import {NextRequest,NextResponse} from "next/server";
 import {syncWeeklyResults} from "@/lib/result-sync";
+import {syncLeagueTable} from "@/lib/league-table-sync";
 import {createAdminClient} from "@/lib/supabase/admin";
 
 export const dynamic="force-dynamic";
@@ -16,8 +17,12 @@ export async function GET(request:NextRequest){
   const apiKey=process.env.FOOTBALL_DATA_API_KEY;
   if(!apiKey)return NextResponse.json({error:"Football data is not configured"},{status:503});
   try{
-    const result=await syncWeeklyResults(createAdminClient(),apiKey);
-    return NextResponse.json({ok:true,...result});
+    const supabase=createAdminClient();
+    const [result,table]=await Promise.all([
+      syncWeeklyResults(supabase,apiKey),
+      syncLeagueTable(supabase,apiKey),
+    ]);
+    return NextResponse.json({ok:true,...result,table});
   }catch(error){
     const message=error instanceof Error?error.message:"Result sync failed";
     return NextResponse.json({ok:false,error:message},{status:500});
