@@ -793,6 +793,7 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .reply-form { display: grid; grid-template-columns: 1fr 38px; gap: 7px; margin-top: 12px; }.reply-form input { min-width: 0; height: 38px; padding: 0 12px; border: 1px solid var(--line); border-radius: 11px; outline: none; }.reply-form input:focus { border-color: var(--violet); }.reply-form button { display: grid; place-items: center; color: white; border-radius: 11px; background: var(--primary); }.reply-form button:disabled { opacity: .35; }
 .player-link,.player-name-link { transition: color .16s ease; }
 .player-link:hover,.player-name-link:hover { color: var(--primary); }
+.streak-alert { display: inline-flex; margin-left: 5px; font-size: 13px; font-style: normal; line-height: 1; vertical-align: -1px; filter: drop-shadow(0 1px 2px rgba(255,112,32,.25)); }
 .player-name-link { font-weight: 850; }
 
 /* Player pages */

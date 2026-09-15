@@ -71,7 +71,7 @@ export default async function RulesPage(){
           <div><i>4</i><b>Collect the full return</b><p>Win: stake × decimal odds, including your stake back. Lose: 0 points returned.</p></div>
         </div>
         <div className="rules-bonus-row">
-          <span><Target size={15}/><b>3 straight GOTW wins</b><small>+10 streak bonus, then reset</small></span>
+          <span><Target size={15}/><b>Featured-game hot streak</b><small>Third straight win +10 · every win after +10 until a loss</small></span>
           <span><Sparkles size={15}/><b>Head-to-head challenge</b><small>Winner +10 · loser −10 · ties 0</small></span>
         </div>
       </section>

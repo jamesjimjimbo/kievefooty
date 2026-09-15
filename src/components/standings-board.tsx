@@ -7,7 +7,7 @@ import {ClubCrest} from "./club-crest";
 
 export type StandingPlayer={
   id:string;name:string;crestUrl:string|null;initials:string;first:number;second:number;overall:number;
-  projected:number;seasonProjection:number;accuracyCorrect:number;accuracyTotal:number;me:boolean;
+  projected:number;seasonProjection:number;accuracyCorrect:number;accuracyTotal:number;featuredStreak:number;me:boolean;
 };
 export type StandingHistoryRow={
   week_number:number;week_label:string;week_end:string;user_id:string;display_name:string;
@@ -44,7 +44,8 @@ function CompetitionHeader({title,prize,description}:{title:string;prize:string;
 }
 
 function PlayerCell({player}:{player:StandingPlayer}){
-  return <Link className="player player-link" href={`/players/${player.id}`}><ClubCrest seed={player.id} label={player.name} imageUrl={player.crestUrl} size="sm"/><span>{player.name}{player.me&&<small className="you-label">You</small>}</span></Link>;
+  const bonusActive=player.featuredStreak>=3;
+  return <Link className="player player-link" href={`/players/${player.id}`}><ClubCrest seed={player.id} label={player.name} imageUrl={player.crestUrl} size="sm"/><span>{player.name}{player.featuredStreak>=2&&<i className="streak-alert" title={bonusActive?`${player.featuredStreak} straight — another win earns +10`:"Two straight — the next featured-game win earns +10"} aria-label={bonusActive?`${player.featuredStreak} straight featured-game wins; another win earns 10 bonus points`:"Two straight featured-game wins; the next win earns 10 bonus points"}>🔥</i>}{player.me&&<small className="you-label">You</small>}</span></Link>;
 }
 
 function ScoreCompetition({title,prize,description,players,scoreKey}:{title:string;prize:string;description:string;players:StandingPlayer[];scoreKey:"first"|"second"}){

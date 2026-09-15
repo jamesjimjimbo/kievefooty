@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { StandingsBoard,type ChallengeHistory,type StandingPlayer } from "@/components/standings-board";
 import { createClient } from "@/lib/supabase/server";
+import {featuredStreakMap,type FeaturedStreakSubmission} from "@/lib/featured-streaks";
 export const metadata:Metadata={title:"Standings"};export const dynamic="force-dynamic";
-type AccuracySubmission={user_id:string;picks:{is_correct:boolean|null}[]};
 type HistoryRow={
   week_number:number;week_label:string;week_end:string;user_id:string;display_name:string;
   first_score:number|string;second_score:number|string;full_score:number|string;accuracy_rate:number|string;
@@ -18,18 +18,19 @@ export default async function Page(){
   const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/auth/sign-in");
   const [{data:first},{data:second},{data:overall},{data:projected},{data:accuracyData},{data:historyData},{data:profiles},{data:challengeData}]=await Promise.all([
     supabase.rpc("get_standings",{p_half:"first"}),supabase.rpc("get_standings",{p_half:"second"}),supabase.rpc("get_standings",{p_half:null}),supabase.rpc("get_projected_standings"),
-    supabase.from("weekly_submissions").select("user_id,picks(is_correct)"),
+    supabase.from("weekly_submissions").select("user_id,week:competition_weeks(number,start_date),picks(kind,is_correct)"),
     supabase.rpc("get_standings_history"),
     supabase.from("profiles").select("id,crest_url"),
     supabase.from("challenges").select("id,challenger_id,opponent_id,challenger_weekly_net,opponent_weekly_net,settled_at,week:competition_weeks(number,label,lock_at),challenger:profiles!challenges_challenger_id_fkey(display_name,crest_url),opponent:profiles!challenges_opponent_id_fkey(display_name,crest_url)").order("created_at",{ascending:false}),
   ]);
+  const streaks=featuredStreakMap((accuracyData??[]) as unknown as FeaturedStreakSubmission[]);
   const crestMap=new Map((profiles??[]).map(profile=>[profile.id,profile.crest_url as string|null]));
   const map=new Map<string,StandingPlayer>();
-  for(const row of overall??[])map.set(row.user_id,{id:row.user_id,name:row.display_name,crestUrl:crestMap.get(row.user_id)??null,initials:row.display_name.split(/\s+/).map((x:string)=>x[0]).join("").slice(0,2).toUpperCase(),first:0,second:0,overall:Number(row.score),projected:Number(row.score),seasonProjection:0,accuracyCorrect:0,accuracyTotal:0,me:row.user_id===user.id});
+  for(const row of overall??[])map.set(row.user_id,{id:row.user_id,name:row.display_name,crestUrl:crestMap.get(row.user_id)??null,initials:row.display_name.split(/\s+/).map((x:string)=>x[0]).join("").slice(0,2).toUpperCase(),first:0,second:0,overall:Number(row.score),projected:Number(row.score),seasonProjection:0,accuracyCorrect:0,accuracyTotal:0,featuredStreak:streaks.get(row.user_id)??0,me:row.user_id===user.id});
   for(const row of first??[]){const p=map.get(row.user_id);if(p)p.first=Number(row.score)}
   for(const row of second??[]){const p=map.get(row.user_id);if(p)p.second=Number(row.score)}
   for(const row of projected??[]){const p=map.get(row.user_id);if(p){p.projected=Number(row.score);p.seasonProjection=Number(row.season_projection)}}
-  for(const submission of (accuracyData??[]) as unknown as AccuracySubmission[]){
+  for(const submission of (accuracyData??[]) as unknown as FeaturedStreakSubmission[]){
     const player=map.get(submission.user_id);if(!player)continue;
     for(const pick of submission.picks??[]){if(pick.is_correct===null)continue;player.accuracyTotal+=1;if(pick.is_correct)player.accuracyCorrect+=1}
   }

@@ -16,10 +16,10 @@ export type PicksPageData={
   personalChallenges:{id:string;direction:"incoming"|"outgoing";otherId:string;otherName:string;otherCrestUrl:string|null}[];
   currentUserId:string;conversations:WeeklyConversation[];
   standings:{
-    first:{id:string;name:string;crestUrl:string|null;score:number;me:boolean}[];
-    second:{id:string;name:string;crestUrl:string|null;score:number;me:boolean}[];
-    overall:{id:string;name:string;crestUrl:string|null;score:number;me:boolean}[];
-    projected:{id:string;name:string;crestUrl:string|null;score:number;me:boolean;seasonProjection:number}[];
+    first:{id:string;name:string;crestUrl:string|null;score:number;featuredStreak:number;me:boolean}[];
+    second:{id:string;name:string;crestUrl:string|null;score:number;featuredStreak:number;me:boolean}[];
+    overall:{id:string;name:string;crestUrl:string|null;score:number;featuredStreak:number;me:boolean}[];
+    projected:{id:string;name:string;crestUrl:string|null;score:number;featuredStreak:number;me:boolean;seasonProjection:number}[];
   };
   leaguePicks:{userId:string;name:string;crestUrl:string|null;source:"manual"|"auto";picks:{fixtureId:string;fixture:string;kind:"gotw"|"own";outcome:Outcome;stake:number;odds:number;isCorrect:boolean|null}[]}[];
   weekChallenges:{id:string;challengerId:string;opponentId:string;challenger:string;challengerCrestUrl:string|null;opponent:string;opponentCrestUrl:string|null;challengerNet:number|null;opponentNet:number|null}[];
@@ -144,7 +144,7 @@ function StandingsSnapshot({rows}:{rows:PicksPageData["standings"]}){
     <div className="home-standing-controls"><div className="mini-segments" aria-label="Standings period">{([["first","First"],["second","Second"],["overall","Full"]] as const).map(([value,label])=><button type="button" key={value} onClick={()=>{setTab(value);if(value!=="overall")setProject(false)}} className={tab===value?"active":""}>{label}</button>)}</div>
     {tab==="overall"&&<label className="projection-toggle"><input type="checkbox" checked={project} onChange={event=>setProject(event.target.checked)}/><span/><b>Include season bets</b></label>}</div>
     {tab==="overall"&&project&&<p className="projection-note">Assumes today&apos;s league and market results are final.</p>}
-    <div className="card table compact-table">{sorted.map((row,index)=><div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><Link className="player player-link" href={`/players/${row.id}`}><ClubCrest seed={row.id} label={row.name} imageUrl={row.crestUrl} size="sm"/><span>{row.name}{row.me&&<small className="you-label">You</small>}</span></Link><span className="points">{row.score}</span></div>)}</div>
+    <div className="card table compact-table">{sorted.map((row,index)=><div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><Link className="player player-link" href={`/players/${row.id}`}><ClubCrest seed={row.id} label={row.name} imageUrl={row.crestUrl} size="sm"/><span>{row.name}{row.featuredStreak>=2&&<i className="streak-alert" title={row.featuredStreak>=3?`${row.featuredStreak} straight — another win earns +10`:"Two straight — the next featured-game win earns +10"} aria-label="Featured-game streak bonus on the line">🔥</i>}{row.me&&<small className="you-label">You</small>}</span></Link><span className="points">{row.score}</span></div>)}</div>
   </section>;
 }
 
