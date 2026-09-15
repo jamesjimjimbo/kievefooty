@@ -1,7 +1,7 @@
 import type {Metadata} from "next";
 import Link from "next/link";
 import {notFound,redirect} from "next/navigation";
-import {ArrowLeft,CheckCircle2,ChevronDown,Clock3,MessageCircle,Swords,Trash2,Trophy,XCircle} from "lucide-react";
+import {ArrowLeft,CheckCircle2,ChevronDown,Clock3,MessageCircle,Swords,Target,Trash2,Trophy,XCircle} from "lucide-react";
 import {AppShell} from "@/components/app-shell";
 import {ClubCrest} from "@/components/club-crest";
 import {createClient} from "@/lib/supabase/server";
@@ -25,6 +25,10 @@ type Challenge={
   week:{number:number;label:string}|null;
   challenger:{display_name:string;crest_url:string|null}|null;opponent:{display_name:string;crest_url:string|null}|null;
 };
+type LedgerEntry={
+  amount:number|string;type:string;description:string;metadata:Record<string,unknown>|null;
+  week:{number:number;label:string}|null;
+};
 
 const points=(value:number)=>Number.isInteger(value)?String(value):value.toFixed(2).replace(/0+$/,"").replace(/\.$/,"");
 const selectionLabel=(pick:Pick)=>pick.selected_outcome==="draw"?"Draw":pick.selected_outcome==="home"?(pick.fixture?.home?.name??"Home"):(pick.fixture?.away?.name??"Away");
@@ -33,19 +37,27 @@ const pickReturn=(pick:Pick)=>pick.is_correct===true?Number(pick.stake)*Number(p
 export default async function PlayerPage({params,searchParams}:{params:Promise<{id:string}>;searchParams:Promise<{wall?:string}>}){
   const {id}=await params;const query=await searchParams;if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))notFound();
   const supabase=await createClient();if(!supabase)redirect("/auth/sign-in");const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/auth/sign-in");
-  const [{data:profile},{data:overall},{data:first},{data:second},{data:submissions},{data:challengeData},{data:wallData},{data:viewer}]=await Promise.all([
+  const [{data:profile},{data:overall},{data:first},{data:second},{data:submissions},{data:challengeData},{data:wallData},{data:viewer},{data:ledgerData}]=await Promise.all([
     supabase.from("profiles").select("id,display_name,favorite_team,bio,motto,crest_url").eq("id",id).maybeSingle(),
     supabase.rpc("get_standings",{p_half:null}),supabase.rpc("get_standings",{p_half:"first"}),supabase.rpc("get_standings",{p_half:"second"}),
     supabase.from("weekly_submissions").select("id,commentary,submitted_at,week:competition_weeks(number,label,status,lock_at),picks(id,kind,selected_outcome,stake,odds,is_correct,fixture:fixtures(status,home_score,away_score,home:teams!fixtures_home_team_id_fkey(name),away:teams!fixtures_away_team_id_fkey(name)))").eq("user_id",id).order("submitted_at",{ascending:false}),
     supabase.from("challenges").select("id,challenger_id,opponent_id,settled_at,challenger_weekly_net,opponent_weekly_net,week:competition_weeks(number,label),challenger:profiles!challenges_challenger_id_fkey(display_name,crest_url),opponent:profiles!challenges_opponent_id_fkey(display_name,crest_url)").or(`challenger_id.eq.${id},opponent_id.eq.${id}`).not("settled_at","is",null).order("created_at",{ascending:false}),
     supabase.from("player_wall_posts").select("id,author_user_id,body,created_at,author:profiles!player_wall_posts_author_user_id_fkey(display_name,crest_url)").eq("target_user_id",id).order("created_at",{ascending:false}),
     supabase.from("profiles").select("is_admin").eq("id",user.id).single(),
+    supabase.from("points_ledger").select("amount,type,description,metadata,week:competition_weeks(number,label)").eq("user_id",id).order("created_at"),
   ]);if(!profile)notFound();
   const overallRows=(overall??[]) as Standing[];const foundRank=overallRows.findIndex(row=>row.user_id===id);const rank=foundRank<0?overallRows.length+1:foundRank+1;
   const score=(rows:Standing[],userId:string)=>Number(rows.find(row=>row.user_id===userId)?.score??0);
   const weekly=((submissions??[]) as unknown as Submission[]).sort((a,b)=>(b.week?.number??0)-(a.week?.number??0));
   const resolvedPicks=weekly.flatMap(submission=>submission.picks??[]).filter(pick=>pick.is_correct!==null);const correct=resolvedPicks.filter(pick=>pick.is_correct).length;const accuracy=resolvedPicks.length?`${((correct/resolvedPicks.length)*100).toFixed(1)}%`:"—";
-  const weeklyReturns=weekly.flatMap(submission=>submission.picks??[]).reduce((sum,pick)=>sum+(pickReturn(pick)??0),0);const fullScore=score(overallRows,id);const adjustments=fullScore-weeklyReturns;
+  const weeklyReturns=weekly.flatMap(submission=>submission.picks??[]).reduce((sum,pick)=>sum+(pickReturn(pick)??0),0);const fullScore=score(overallRows,id);
+  const ledger=(ledgerData??[]) as unknown as LedgerEntry[];
+  const challengePoints=ledger.filter(entry=>entry.type==="challenge_win"||entry.type==="challenge_loss").reduce((sum,entry)=>sum+Number(entry.amount),0);
+  const streakEntries=ledger.filter(entry=>entry.type==="streak_bonus");const streakPoints=streakEntries.reduce((sum,entry)=>sum+Number(entry.amount),0);
+  const otherAdjustments=fullScore-weeklyReturns-challengePoints-streakPoints;
+  const featuredHistory=[...weekly].sort((a,b)=>(a.week?.number??0)-(b.week?.number??0)).flatMap(submission=>(submission.picks??[]).filter(pick=>pick.kind==="gotw").map(pick=>({pick,week:submission.week})));
+  let currentFeaturedRun=0;for(const item of featuredHistory){if(item.pick.is_correct===true)currentFeaturedRun+=1;else if(item.pick.is_correct===false)currentFeaturedRun=0;}
+  const streakProgress=currentFeaturedRun%3;const winsToNextBonus=3-streakProgress;
   const challenges=((challengeData??[]) as unknown as Challenge[]).map(challenge=>{
     const isChallenger=challenge.challenger_id===id;
     const playerNet=Number(isChallenger?challenge.challenger_weekly_net:challenge.opponent_weekly_net);
@@ -55,7 +67,7 @@ export default async function PlayerPage({params,searchParams}:{params:Promise<{
     const result=playerNet>opponentNet?"win":playerNet<opponentNet?"loss":"draw";
     return {...challenge,playerNet,opponentNet,opponentId,opponent,result};
   });
-  const challengeWins=challenges.filter(challenge=>challenge.result==="win").length;const challengeLosses=challenges.filter(challenge=>challenge.result==="loss").length;const challengeDraws=challenges.filter(challenge=>challenge.result==="draw").length;const challengePoints=(challengeWins-challengeLosses)*10;
+  const challengeWins=challenges.filter(challenge=>challenge.result==="win").length;const challengeLosses=challenges.filter(challenge=>challenge.result==="loss").length;const challengeDraws=challenges.filter(challenge=>challenge.result==="draw").length;
   const posts=(wallData??[]) as unknown as WallPost[];const canModerate=Boolean(viewer?.is_admin)||user.id===id;
   return <AppShell><main className="content player-page">
     <Link className="player-back" href="/clubhouse"><ArrowLeft size={16}/>Back to the Clubhouse</Link>
@@ -63,7 +75,8 @@ export default async function PlayerPage({params,searchParams}:{params:Promise<{
     <section className="player-page-stats" aria-label={`${profile.display_name} league statistics`}><div className="card"><span>Overall rank</span><b>#{rank}</b></div><div className="card"><span>Full score</span><b>{points(fullScore)}</b></div><div className="card"><span>First / Second</span><b>{points(score((first??[]) as Standing[],id))} / {points(score((second??[]) as Standing[],id))}</b></div><div className="card"><span>Pick accuracy</span><b>{accuracy}</b><small>{correct} of {resolvedPicks.length}</small></div><div className="card h2h-stat"><span>Head to head</span><b>{challengeWins}–{challengeLosses}{challengeDraws?`–${challengeDraws}`:""}</b><small>{points(challengePoints)} challenge pts</small></div></section>
     <section className="player-picks-section">
       <div className="section-label player-picks-heading"><div><p className="eyebrow">Picks &amp; points</p><h2>How {profile.display_name} got here</h2><p className="subtle">Every revealed pick, its locked price, and the points it returned.</p></div><Trophy size={22}/></div>
-      <div className="card player-score-explainer"><div><span>Match returns</span><b>{points(weeklyReturns)}</b></div><span className="score-operator">+</span><div><span>Other adjustments</span><b>{points(adjustments)}</b></div><span className="score-operator">=</span><div className="score-total"><span>Full score</span><b>{points(fullScore)}</b></div><p>Other adjustments include season competitions, challenges, and streak bonuses.</p></div>
+      <div className="card player-score-explainer"><div><span>Match returns</span><b>{points(weeklyReturns)}</b></div><span className="score-operator">+</span><div className="score-adjustment-breakdown"><span>Bonuses &amp; adjustments</span><ul><li><small>Challenges</small><b>{points(challengePoints)}</b></li><li><small>Streak bonuses</small><b>{points(streakPoints)}</b></li>{otherAdjustments!==0&&<li><small>Competitions &amp; other</small><b>{points(otherAdjustments)}</b></li>}</ul></div><span className="score-operator">=</span><div className="score-total"><span>Full score</span><b>{points(fullScore)}</b></div><p>Streak points are awarded after every three consecutive featured-game wins; the bonus counter then resets.</p></div>
+      <section className="card player-streak-record"><header><div><p className="eyebrow">Featured-game streak</p><h3>{currentFeaturedRun} consecutive {currentFeaturedRun===1?"win":"wins"}</h3></div><div className="streak-earned"><Target size={17}/><span>{points(streakPoints)} bonus pts earned</span></div></header><div className="streak-progress"><div><span>Progress to next +10</span><b>{streakProgress}/3</b></div><div className="streak-dots" aria-label={`${streakProgress} of 3 wins toward the next streak bonus`}>{[0,1,2].map(index=><i className={index<streakProgress?"filled":""} key={index}/>)}</div><p>{streakProgress===0&&streakPoints>0?"The last bonus was banked and the counter reset.":`${winsToNextBonus} more consecutive ${winsToNextBonus===1?"win":"wins"} needed.`}</p></div>{streakEntries.length>0&&<div className="streak-awards">{streakEntries.map((entry,index)=><div key={`${entry.week?.number??"bonus"}-${index}`}><CheckCircle2 size={15}/><span>{entry.week?`Week ${entry.week.number} · ${entry.week.label}`:"Streak bonus"}</span><b>+{points(Number(entry.amount))}</b></div>)}</div>}</section>
       {challenges.length>0&&<section className="card player-challenge-record"><header><div><p className="eyebrow">Head to head</p><h3>{challengeWins} wins · {challengeLosses} losses{challengeDraws?` · ${challengeDraws} draws`:""}</h3></div><div className={`challenge-net ${challengePoints>=0?"positive":"negative"}`}><Swords size={17}/><span>{challengePoints>0?"+":""}{points(challengePoints)} pts</span></div></header><div className="player-challenge-list">{challenges.map(challenge=><div className="player-challenge-row" key={challenge.id}><span className="challenge-week">W{challenge.week?.number??"—"}</span><Link href={`/players/${challenge.opponentId}`}><ClubCrest seed={challenge.opponentId} label={challenge.opponent?.display_name??"Player"} imageUrl={challenge.opponent?.crest_url} size="sm"/><span>vs <b>{challenge.opponent?.display_name??"Player"}</b></span></Link><span className="challenge-score">{points(challenge.playerNet)}–{points(challenge.opponentNet)}</span><strong className={challenge.result}>{challenge.result==="win"?"Won +10":challenge.result==="loss"?"Lost −10":"Draw 0"}</strong></div>)}</div></section>}
       <div className="player-week-list">{weekly.length?weekly.map(submission=>{
         const weekReturn=(submission.picks??[]).reduce((sum,pick)=>sum+(pickReturn(pick)??0),0);const pending=(submission.picks??[]).some(pick=>pick.is_correct===null);

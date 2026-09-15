@@ -828,6 +828,25 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .player-score-explainer .score-total { grid-column: 1 / -1; padding-top: 9px; border-top: 1px solid rgba(91,67,214,.16); }
 .player-score-explainer .score-total b { color: var(--primary); font-size: 24px; }
 .player-score-explainer p { grid-column: 1 / -1; margin: 0; color: var(--muted); font-size: 8px; line-height: 1.45; }
+.score-adjustment-breakdown ul { display: grid; gap: 3px; margin: 2px 0 0; padding: 0; list-style: none; }
+.score-adjustment-breakdown li { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.score-adjustment-breakdown li small { color: var(--muted); font-size: 8px; font-weight: 750; }
+.score-adjustment-breakdown li b { font-size: 12px; }
+.player-streak-record { overflow: hidden; margin-top: 10px; padding: 0; border-color: #d8d0ff; box-shadow: none; }
+.player-streak-record > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: linear-gradient(110deg,#f3f0ff,#fff); }
+.player-streak-record h3 { margin: 2px 0 0; font-size: 14px; }
+.streak-earned { display: inline-flex; align-items: center; gap: 6px; color: var(--primary); font-size: 10px; font-weight: 850; }
+.streak-progress { padding: 12px 14px; }
+.streak-progress > div:first-child { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 9px; font-weight: 850; text-transform: uppercase; }
+.streak-progress > div:first-child b { color: var(--ink); font-size: 12px; }
+.streak-dots { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; margin-top: 8px; }
+.streak-dots i { height: 7px; border-radius: 999px; background: #e4e0f8; }
+.streak-dots i.filled { background: linear-gradient(90deg,var(--primary),#8a68ff); }
+.streak-progress p { margin: 7px 0 0; color: var(--muted); font-size: 9px; }
+.streak-awards { border-top: 1px solid rgba(91,67,214,.14); }
+.streak-awards > div { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; padding: 9px 14px; font-size: 9px; }
+.streak-awards svg { color: #008879; }
+.streak-awards b { color: #008879; }
 .player-challenge-record { overflow: hidden; margin-top: 10px; padding: 0; border-color: #bcebe3; box-shadow: none; }
 .player-challenge-record > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 14px; background: linear-gradient(110deg,#eafff9,#f8fffd); }
 .player-challenge-record h3 { margin: 2px 0 0; font-size: 14px; }
