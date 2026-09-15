@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/results",
-      "schedule": "15 * * * *"
+      "schedule": "15 23 * * *"
     },
     {
       "path": "/api/cron/cup-defaults",
