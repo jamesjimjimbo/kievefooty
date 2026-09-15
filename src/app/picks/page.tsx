@@ -104,7 +104,7 @@ export default async function PicksPage(){
     opponentNet:challenge.opponent_weekly_net===null?null:Number(challenge.opponent_weekly_net),
   }));
   const data:PicksPageData={
-    week:{id:week.id,number:week.number,label:week.label,lockAt:week.lock_at,lockLabel:new Intl.DateTimeFormat("en-US",{weekday:"long",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(week.lock_at)),competition:week.is_casino?"Casino":week.competition_code==="FAC"?"FA Cup":"Premier League",oddsLabel:latestOddsCapture?new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(latestOddsCapture)):undefined},
+    week:{id:week.id,number:week.number,label:week.label,lockAt:week.lock_at,lockLabel:new Intl.DateTimeFormat("en-US",{weekday:"long",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(week.lock_at)),competition:week.is_casino?"Casino":week.competition_code==="FAC"?"FA Cup":"Premier League",featuredLabel:week.number===5?"Turd Bowl of the Week":"Game of the Week",featuredShortLabel:week.number===5?"TBOTW":"GOTW",oddsLabel:latestOddsCapture?new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(latestOddsCapture)):undefined},
     bankroll:(ledger??[]).reduce((sum,row)=>sum+Number(row.amount),0),rank,fixtures,
     existing:{gotw:existing.find(p=>p.kind==="gotw"),own:existing.find(p=>p.kind==="own"),source:submission?.source,commentary:submission?.commentary??""},
     currentUserId:user.id,conversations:conversationRows,

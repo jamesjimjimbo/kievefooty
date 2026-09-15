@@ -11,7 +11,7 @@ import type { WeeklyConversation } from "@/lib/weekly-conversations";
 
 type ExistingPick={fixture_id:string;kind:"gotw"|"own";selected_outcome:Outcome;stake:number};
 export type PicksPageData={
-  week:{id:string;number:number;label:string;lockAt:string;lockLabel:string;competition:string;oddsLabel?:string};bankroll:number;rank:number;fixtures:Fixture[];
+  week:{id:string;number:number;label:string;lockAt:string;lockLabel:string;competition:string;featuredLabel:string;featuredShortLabel:string;oddsLabel?:string};bankroll:number;rank:number;fixtures:Fixture[];
   existing:{gotw?:ExistingPick;own?:ExistingPick;source?:string;commentary?:string};opponents:{id:string;display_name:string}[];challengeTokens:number;locked:boolean;
   personalChallenges:{id:string;direction:"incoming"|"outgoing";otherId:string;otherName:string;otherCrestUrl:string|null}[];
   currentUserId:string;conversations:WeeklyConversation[];
@@ -81,11 +81,11 @@ function LivePicks({data}:{data:PicksPageData}){
     <div className="picks-topline"><div><span>{data.week.competition} · Week {data.week.number}</span><b>{data.week.label}</b></div><span className={`pill ${data.locked?"":"live"}`}><Clock3 size={13}/>{data.locked?"Locked":`Locks ${data.week.lockLabel}`}</span></div>
     {data.previousWeek&&<WeeklyRecap recap={data.previousWeek}/>}
     <div className="picks-layout"><div>
-      {data.locked?<LockedPickReceipt gotw={gotw} gotwPick={gotwPick} gotwStake={gotwStake} other={other} otherPick={otherPick} otherStake={otherStake} source={data.existing.source}/>:<><div className="pick-choice-grid">
+      {data.locked?<LockedPickReceipt gotw={gotw} gotwPick={gotwPick} gotwStake={gotwStake} other={other} otherPick={otherPick} otherStake={otherStake} source={data.existing.source} featuredLabel={data.week.featuredLabel}/>:<><div className="pick-choice-grid">
         <section className="pick-choice">
-          <div className="section-label"><div><p className="eyebrow">Required</p><h2>Game of the Week</h2></div><ShieldQuestion size={21}/></div>
-          <div className="card fixture-select fixed-fixture-select"><div><span>Game of the Week</span><b>{gotw.home} vs {gotw.away}</b></div><span className="pill">Fixed</span></div>
-          <FixtureCard fixture={gotw} selection={gotwPick} onSelect={o=>{setMessage("");setGotwPick(o)}} stake={gotwStake} setStake={adjustGotw} label="GOTW" disabled={data.locked}/>
+          <div className="section-label"><div><p className="eyebrow">Required</p><h2>{data.week.featuredLabel}</h2></div><ShieldQuestion size={21}/></div>
+          <div className="card fixture-select fixed-fixture-select"><div><span>{data.week.featuredLabel}</span><b>{gotw.home} vs {gotw.away}</b></div><span className="pill">Fixed</span></div>
+          <FixtureCard fixture={gotw} selection={gotwPick} onSelect={o=>{setMessage("");setGotwPick(o)}} stake={gotwStake} setStake={adjustGotw} label={data.week.featuredShortLabel} disabled={data.locked}/>
         </section>
         <section className="pick-choice">
           <div className="section-label"><div><p className="eyebrow">Your choice</p><h2>One other match</h2></div></div>
@@ -113,11 +113,11 @@ function LivePicks({data}:{data:PicksPageData}){
   </main></AppShell>;
 }
 
-function LockedPickReceipt({gotw,gotwPick,gotwStake,other,otherPick,otherStake,source}:{
-  gotw:Fixture;gotwPick?:Outcome;gotwStake:number;other?:Fixture;otherPick?:Outcome;otherStake:number;source?:string;
+function LockedPickReceipt({gotw,gotwPick,gotwStake,other,otherPick,otherStake,source,featuredLabel}:{
+  gotw:Fixture;gotwPick?:Outcome;gotwStake:number;other?:Fixture;otherPick?:Outcome;otherStake:number;source?:string;featuredLabel:string;
 }){
   const picks=[
-    gotwPick?{fixture:gotw,outcome:gotwPick,stake:gotwStake,label:"Game of the Week"}:null,
+    gotwPick?{fixture:gotw,outcome:gotwPick,stake:gotwStake,label:featuredLabel}:null,
     other&&otherPick?{fixture:other,outcome:otherPick,stake:otherStake,label:"Your other match"}:null,
   ].filter((pick):pick is {fixture:Fixture;outcome:Outcome;stake:number;label:string}=>Boolean(pick));
   return <section className="locked-pick-receipt">
