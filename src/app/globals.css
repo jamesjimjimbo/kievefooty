@@ -198,6 +198,22 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .manager-special { margin-top: 26px; padding: 24px; border: 1px solid #ffd58b; border-radius: var(--radius); background: linear-gradient(135deg,#fff9e9,#fff2d6); }
 .manager-special .section-label { align-items: end; }
 .manager-special > .card { border-color: #f2c771; box-shadow: 0 16px 38px rgba(177,111,0,.1); }
+.dockers-derby { margin: 16px 0; overflow: hidden; border: 1px solid rgba(105,61,18,.18); border-radius: 17px; background: rgba(255,255,255,.72); }
+.derby-clubs { display: grid; grid-template-columns: minmax(0,1fr) auto minmax(0,1fr); align-items: center; gap: 12px; padding: 15px 18px; }
+.derby-club { min-width: 0; display: flex; align-items: center; gap: 11px; }
+.derby-club.west-ham { flex-direction: row-reverse; text-align: right; }
+.derby-club > span:last-child { display: grid; gap: 1px; min-width: 0; }
+.derby-club b { font-size: 15px; line-height: 1.15; }
+.derby-club small { color: var(--muted); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+.derby-badge { width: 50px; height: 50px; flex: 0 0 50px; display: grid; place-items: center; border: 3px solid white; border-radius: 50%; box-shadow: 0 7px 18px rgba(31,23,68,.16); font-size: 26px; }
+.millwall .derby-badge { background: #071f5c; }
+.west-ham .derby-badge { color: #7a263a; background: #7ec8e3; }
+.derby-vs { padding: 6px 8px; color: #7b4c12; border: 1px solid #edc678; border-radius: 99px; background: #fff4d1; font-size: 10px; font-weight: 950; letter-spacing: .12em; }
+.derby-hammers { position: relative; }
+.derby-hammers svg { position: absolute; width: 25px; height: 25px; stroke-width: 3; }
+.derby-hammers svg:first-child { transform: translateX(-5px) rotate(38deg); }
+.derby-hammers svg:last-child { transform: translateX(5px) scaleX(-1) rotate(38deg); }
+.dockers-derby > p { margin: 0; padding: 11px 16px; color: #60431e; border-top: 1px solid rgba(105,61,18,.14); background: #fff4d6; font-size: 12px; line-height: 1.45; }
 .stake-wrap.fixed-stake .pill { color: #814d00; border-color: #efc05d; background: #fff4cf; }
 .stepper { display: flex; align-items: center; gap: 14px; font-weight: 950; }
 .stepper button { width: 37px; height: 37px; color: var(--primary); border: 1px solid #ddd7ff; border-radius: 11px; background: var(--lavender); font-size: 20px; }

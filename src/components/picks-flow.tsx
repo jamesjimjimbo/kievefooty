@@ -1,7 +1,7 @@
 "use client";
 import { useEffect,useRef,useState,useTransition } from "react";
 import Link from "next/link";
-import { CheckCircle2,Clock3,LoaderCircle,LockKeyhole,MessageCircle,RefreshCw,ShieldQuestion,Swords } from "lucide-react";
+import { CheckCircle2,Clock3,Hammer,LoaderCircle,LockKeyhole,MessageCircle,RefreshCw,ShieldQuestion,Swords } from "lucide-react";
 import type { Fixture,Outcome } from "@/lib/demo-data";
 import { AppShell } from "@/components/app-shell";
 import { ClubCrest } from "@/components/club-crest";
@@ -31,6 +31,23 @@ function FixtureCard({fixture,selection,onSelect,stake,setStake,label,disabled,f
     <div className="odds">{(["home","draw","away"] as Outcome[]).map(o=><button disabled={disabled} type="button" key={o} onClick={()=>onSelect(o)} className={`odd ${selection===o?"selected":""}`} aria-pressed={selection===o}><small>{o==="home"?fixture.home:o==="away"?fixture.away:"Draw"}</small>{fixture.odds[o].toFixed(2)}</button>)}</div>
     {selection&&<div className={`stake-wrap ${fixedStake?"fixed-stake":""}`}><div><b>{fixedStake?"Manager’s stake":"Stake"}</b><div className="kickoff">{fixedStake?"Fixed—no adjusting":"Adjust your split"}</div></div>{fixedStake?<span className="pill">{stake} points</span>:<div className="stepper"><button disabled={disabled} type="button" onClick={()=>setStake?.(Math.max(1,stake-1))} aria-label="Reduce stake">−</button><span>{stake}</span><button disabled={disabled} type="button" onClick={()=>setStake?.(Math.min(9,stake+1))} aria-label="Increase stake">+</button></div>}</div>}
   </article>;
+}
+
+function DockersDerbyIdentity(){
+  return <div className="dockers-derby" aria-label="Millwall versus West Ham United: the Dockers Derby">
+    <div className="derby-clubs">
+      <div className="derby-club millwall">
+        <span className="derby-badge" aria-hidden="true">🦁</span>
+        <span><b>Millwall</b><small>The Lions</small></span>
+      </div>
+      <span className="derby-vs">VS</span>
+      <div className="derby-club west-ham">
+        <span className="derby-badge derby-hammers" aria-hidden="true"><Hammer/><Hammer/></span>
+        <span><b>West Ham</b><small>The Hammers</small></span>
+      </div>
+    </div>
+    <p><b>Dockside grudge, back on the clock.</b> Two longshoremen clubs, rival yards and the old 1926 “scabs” tale—working-waterfront folklore with a century-long hangover.</p>
+  </div>;
 }
 
 export function PicksFlow({data}:{data:PicksPageData|null}){
@@ -96,7 +113,7 @@ function LivePicks({data}:{data:PicksPageData}){
           {other&&<FixtureCard fixture={other} selection={otherPick} onSelect={o=>{setMessage("");setOtherPick(o)}} stake={otherStake} setStake={adjustOther} disabled={data.locked}/>}
         </section>
       </div>
-      {special&&<section className="manager-special"><div className="section-label"><div><p className="eyebrow">Five-point bonus bet</p><h2>Manager&apos;s Special of the Week</h2><p className="subtle">The Dockers derby. Pick the result; the stake is fixed at 5.</p></div><span className="pill">No adjusting</span></div><FixtureCard fixture={special} selection={specialPick} onSelect={o=>{setMessage("");setSpecialPick(o)}} stake={5} label="SPECIAL" disabled={data.locked} fixedStake/></section>}
+      {special&&<section className="manager-special"><div className="section-label"><div><p className="eyebrow">Five-point bonus bet</p><h2>Manager&apos;s Special of the Week</h2><p className="subtle">The Dockers Derby. Pick the result; the stake is fixed at 5.</p></div><span className="pill">No adjusting</span></div><DockersDerbyIdentity/><FixtureCard fixture={special} selection={specialPick} onSelect={o=>{setMessage("");setSpecialPick(o)}} stake={5} label="SPECIAL" disabled={data.locked} fixedStake/></section>}
       {message&&<div className={message.toLowerCase().includes("error")?"notice":"saved"}><CheckCircle2 size={20}/>{message}</div>}
       <div className={`autosave-bar ${saveStatus}`}>
         {!signature?<><Clock3 size={18}/><div><b>Finish your card</b><span>It will save automatically as soon as every required outcome is selected.</span></div></>
