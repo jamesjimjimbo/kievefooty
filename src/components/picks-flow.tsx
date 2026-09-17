@@ -9,10 +9,10 @@ import { WeeklyConversations } from "@/components/weekly-conversations";
 import { createChallenge,saveWeeklyComment,saveWeeklyPicks } from "@/app/picks/actions";
 import type { WeeklyConversation } from "@/lib/weekly-conversations";
 
-type ExistingPick={fixture_id:string;kind:"gotw"|"own";selected_outcome:Outcome;stake:number};
+type ExistingPick={fixture_id:string;kind:"gotw"|"own"|"special";selected_outcome:Outcome;stake:number};
 export type PicksPageData={
   week:{id:string;number:number;label:string;lockAt:string;lockLabel:string;competition:string;featuredLabel:string;featuredShortLabel:string;oddsLabel?:string};bankroll:number;rank:number;fixtures:Fixture[];
-  existing:{gotw?:ExistingPick;own?:ExistingPick;source?:string;commentary?:string};opponents:{id:string;display_name:string}[];challengeTokens:number;locked:boolean;
+  existing:{gotw?:ExistingPick;own?:ExistingPick;special?:ExistingPick;source?:string;commentary?:string};opponents:{id:string;display_name:string}[];challengeTokens:number;locked:boolean;
   personalChallenges:{id:string;direction:"incoming"|"outgoing";otherId:string;otherName:string;otherCrestUrl:string|null}[];
   currentUserId:string;conversations:WeeklyConversation[];
   standings:{
@@ -21,15 +21,15 @@ export type PicksPageData={
     overall:{id:string;name:string;crestUrl:string|null;score:number;featuredStreak:number;me:boolean}[];
     projected:{id:string;name:string;crestUrl:string|null;score:number;featuredStreak:number;me:boolean;seasonProjection:number}[];
   };
-  leaguePicks:{userId:string;name:string;crestUrl:string|null;source:"manual"|"auto";picks:{fixtureId:string;fixture:string;kind:"gotw"|"own";outcome:Outcome;stake:number;odds:number;isCorrect:boolean|null}[]}[];
+  leaguePicks:{userId:string;name:string;crestUrl:string|null;source:"manual"|"auto";picks:{fixtureId:string;fixture:string;kind:"gotw"|"own"|"special";outcome:Outcome;stake:number;odds:number;isCorrect:boolean|null}[]}[];
   weekChallenges:{id:string;challengerId:string;opponentId:string;challenger:string;challengerCrestUrl:string|null;opponent:string;opponentCrestUrl:string|null;challengerNet:number|null;opponentNet:number|null}[];
   previousWeek?:{label:string;winner:{id:string;name:string;crestUrl:string|null;score:number};loser:{id:string;name:string;crestUrl:string|null;score:number}};
 };
 
-function FixtureCard({fixture,selection,onSelect,stake,setStake,label,disabled}:{fixture:Fixture;selection?:Outcome;onSelect:(o:Outcome)=>void;stake:number;setStake:(n:number)=>void;label?:string;disabled?:boolean}) {
+function FixtureCard({fixture,selection,onSelect,stake,setStake,label,disabled,fixedStake=false}:{fixture:Fixture;selection?:Outcome;onSelect:(o:Outcome)=>void;stake:number;setStake?:(n:number)=>void;label?:string;disabled?:boolean;fixedStake?:boolean}) {
   return <article className="card"><div className="fixture-head"><div><div className="teams">{fixture.home} <span className="subtle">vs</span> {fixture.away}</div><div className="kickoff">{fixture.kickoff}</div></div>{label&&<span className="pill">{label}</span>}</div>
     <div className="odds">{(["home","draw","away"] as Outcome[]).map(o=><button disabled={disabled} type="button" key={o} onClick={()=>onSelect(o)} className={`odd ${selection===o?"selected":""}`} aria-pressed={selection===o}><small>{o==="home"?fixture.home:o==="away"?fixture.away:"Draw"}</small>{fixture.odds[o].toFixed(2)}</button>)}</div>
-    {selection&&<div className="stake-wrap"><div><b>Stake</b><div className="kickoff">Adjust your split</div></div><div className="stepper"><button disabled={disabled} type="button" onClick={()=>setStake(Math.max(1,stake-1))} aria-label="Reduce stake">−</button><span>{stake}</span><button disabled={disabled} type="button" onClick={()=>setStake(Math.min(9,stake+1))} aria-label="Increase stake">+</button></div></div>}
+    {selection&&<div className={`stake-wrap ${fixedStake?"fixed-stake":""}`}><div><b>{fixedStake?"Manager’s stake":"Stake"}</b><div className="kickoff">{fixedStake?"Fixed—no adjusting":"Adjust your split"}</div></div>{fixedStake?<span className="pill">{stake} points</span>:<div className="stepper"><button disabled={disabled} type="button" onClick={()=>setStake?.(Math.max(1,stake-1))} aria-label="Reduce stake">−</button><span>{stake}</span><button disabled={disabled} type="button" onClick={()=>setStake?.(Math.min(9,stake+1))} aria-label="Increase stake">+</button></div>}</div>}
   </article>;
 }
 
@@ -39,10 +39,11 @@ export function PicksFlow({data}:{data:PicksPageData|null}){
 }
 
 function LivePicks({data}:{data:PicksPageData}){
-  const gotw=data.fixtures.find(f=>f.gotw)!;const others=data.fixtures.filter(f=>!f.gotw);
+  const gotw=data.fixtures.find(f=>f.gotw)!;const special=data.fixtures.find(f=>f.special);const others=data.fixtures.filter(f=>!f.gotw&&!f.special);
   const [gotwPick,setGotwPick]=useState<Outcome|undefined>(data.existing.gotw?.selected_outcome);
   const [otherId,setOtherId]=useState(data.existing.own?.fixture_id??others[0]?.id);
   const [otherPick,setOtherPick]=useState<Outcome|undefined>(data.existing.own?.selected_outcome);
+  const [specialPick,setSpecialPick]=useState<Outcome|undefined>(data.existing.special?.selected_outcome);
   const [gotwStake,setGotwStake]=useState(Number(data.existing.gotw?.stake??5));const [otherStake,setOtherStake]=useState(Number(data.existing.own?.stake??5));
   const [message,setMessage]=useState("");
   const [saveStatus,setSaveStatus]=useState<"idle"|"waiting"|"saving"|"saved"|"error">(data.existing.source?"saved":"idle");
@@ -51,11 +52,12 @@ function LivePicks({data}:{data:PicksPageData}){
   const [opponent,setOpponent]=useState(data.opponents[0]?.id??"");const [pending,startTransition]=useTransition();
   const [comment,setComment]=useState(data.existing.commentary??"");const [commentMessage,setCommentMessage]=useState("");const [commentPending,startCommentTransition]=useTransition();
   const other=others.find(f=>f.id===otherId);const total=gotwStake+otherStake;
-  const signature=gotwPick&&otherPick&&other&&total===10
-    ?`${gotw.id}:${gotwPick}:${gotwStake}|${other.id}:${otherPick}:${otherStake}`
+  const specialComplete=!special||Boolean(specialPick);
+  const signature=gotwPick&&otherPick&&other&&total===10&&specialComplete
+    ?`${gotw.id}:${gotwPick}:${gotwStake}|${other.id}:${otherPick}:${otherStake}${special&&specialPick?`|${special.id}:${specialPick}:5`:""}`
     :"";
-  const initialSignature=data.existing.gotw&&data.existing.own
-    ?`${gotw.id}:${data.existing.gotw.selected_outcome}:${Number(data.existing.gotw.stake)}|${data.existing.own.fixture_id}:${data.existing.own.selected_outcome}:${Number(data.existing.own.stake)}`
+  const initialSignature=data.existing.gotw&&data.existing.own&&(!special||data.existing.special)
+    ?`${gotw.id}:${data.existing.gotw.selected_outcome}:${Number(data.existing.gotw.stake)}|${data.existing.own.fixture_id}:${data.existing.own.selected_outcome}:${Number(data.existing.own.stake)}${special&&data.existing.special?`|${special.id}:${data.existing.special.selected_outcome}:5`:""}`
     :"";
   const lastSaved=useRef(initialSignature);
   const adjustGotw=(n:number)=>{setMessage("");setGotwStake(n);setOtherStake(10-n)};const adjustOther=(n:number)=>{setMessage("");setOtherStake(n);setGotwStake(10-n)};
@@ -70,18 +72,19 @@ function LivePicks({data}:{data:PicksPageData}){
       void saveWeeklyPicks({
         weekId:data.week.id,gotwFixtureId:gotw.id,gotwOutcome:gotwPick,gotwStake,
         ownFixtureId:other.id,ownOutcome:otherPick,ownStake:otherStake,
+        specialFixtureId:special?.id??null,specialOutcome:specialPick??null,
       }).then(result=>{
         if(result.error){setSaveStatus("error");setSaveError(result.error);return}
         lastSaved.current=signature;setSaveStatus("saved");setSaveError("");
       });
     },650);
     return ()=>window.clearTimeout(timer);
-  },[data.locked,data.week.id,gotw.id,gotwPick,gotwStake,other,otherPick,otherStake,retryNonce,signature]);
+  },[data.locked,data.week.id,gotw.id,gotwPick,gotwStake,other,otherPick,otherStake,special,specialPick,retryNonce,signature]);
   return <AppShell><main className="content content-wide picks-page">
     <div className="picks-topline"><div><span>{data.week.competition} · Week {data.week.number}</span><b>{data.week.label}</b></div><span className={`pill ${data.locked?"":"live"}`}><Clock3 size={13}/>{data.locked?"Locked":`Locks ${data.week.lockLabel}`}</span></div>
     {data.previousWeek&&<WeeklyRecap recap={data.previousWeek}/>}
     <div className="picks-layout"><div>
-      {data.locked?<LockedPickReceipt gotw={gotw} gotwPick={gotwPick} gotwStake={gotwStake} other={other} otherPick={otherPick} otherStake={otherStake} source={data.existing.source} featuredLabel={data.week.featuredLabel}/>:<><div className="pick-choice-grid">
+      {data.locked?<LockedPickReceipt gotw={gotw} gotwPick={gotwPick} gotwStake={gotwStake} other={other} otherPick={otherPick} otherStake={otherStake} special={special} specialPick={specialPick} source={data.existing.source} featuredLabel={data.week.featuredLabel}/>:<><div className="pick-choice-grid">
         <section className="pick-choice">
           <div className="section-label"><div><p className="eyebrow">Required</p><h2>{data.week.featuredLabel}</h2></div><ShieldQuestion size={21}/></div>
           <div className="card fixture-select fixed-fixture-select"><div><span>{data.week.featuredLabel}</span><b>{gotw.home} vs {gotw.away}</b></div><span className="pill">Fixed</span></div>
@@ -93,9 +96,10 @@ function LivePicks({data}:{data:PicksPageData}){
           {other&&<FixtureCard fixture={other} selection={otherPick} onSelect={o=>{setMessage("");setOtherPick(o)}} stake={otherStake} setStake={adjustOther} disabled={data.locked}/>}
         </section>
       </div>
+      {special&&<section className="manager-special"><div className="section-label"><div><p className="eyebrow">Five-point bonus bet</p><h2>Manager&apos;s Special of the Week</h2><p className="subtle">The Dockers derby. Pick the result; the stake is fixed at 5.</p></div><span className="pill">No adjusting</span></div><FixtureCard fixture={special} selection={specialPick} onSelect={o=>{setMessage("");setSpecialPick(o)}} stake={5} label="SPECIAL" disabled={data.locked} fixedStake/></section>}
       {message&&<div className={message.toLowerCase().includes("error")?"notice":"saved"}><CheckCircle2 size={20}/>{message}</div>}
       <div className={`autosave-bar ${saveStatus}`}>
-        {!signature?<><Clock3 size={18}/><div><b>Finish both picks</b><span>They&apos;ll save automatically as soon as both outcomes are selected.</span></div></>
+        {!signature?<><Clock3 size={18}/><div><b>Finish your card</b><span>It will save automatically as soon as every required outcome is selected.</span></div></>
         :saveStatus==="error"?<><RefreshCw size={18}/><div><b>Couldn&apos;t save</b><span>{saveError}</span></div><button type="button" onClick={()=>setRetryNonce(value=>value+1)}>Retry</button></>
         :saveStatus==="saving"||saveStatus==="waiting"?<><LoaderCircle className="spin" size={18}/><div><b>{saveStatus==="waiting"?"Changes queued":"Saving changes"}</b><span>You can keep editing.</span></div></>
         :<><CheckCircle2 size={18}/><div><b>All changes saved</b><span>No Save button needed.</span></div></>}
@@ -113,12 +117,13 @@ function LivePicks({data}:{data:PicksPageData}){
   </main></AppShell>;
 }
 
-function LockedPickReceipt({gotw,gotwPick,gotwStake,other,otherPick,otherStake,source,featuredLabel}:{
-  gotw:Fixture;gotwPick?:Outcome;gotwStake:number;other?:Fixture;otherPick?:Outcome;otherStake:number;source?:string;featuredLabel:string;
+function LockedPickReceipt({gotw,gotwPick,gotwStake,other,otherPick,otherStake,special,specialPick,source,featuredLabel}:{
+  gotw:Fixture;gotwPick?:Outcome;gotwStake:number;other?:Fixture;otherPick?:Outcome;otherStake:number;special?:Fixture;specialPick?:Outcome;source?:string;featuredLabel:string;
 }){
   const picks=[
     gotwPick?{fixture:gotw,outcome:gotwPick,stake:gotwStake,label:featuredLabel}:null,
     other&&otherPick?{fixture:other,outcome:otherPick,stake:otherStake,label:"Your other match"}:null,
+    special&&specialPick?{fixture:special,outcome:specialPick,stake:5,label:"Manager's Special"}:null,
   ].filter((pick):pick is {fixture:Fixture;outcome:Outcome;stake:number;label:string}=>Boolean(pick));
   return <section className="locked-pick-receipt">
     <div className="locked-receipt-head"><div><p className="eyebrow">Your final card</p><h2>Your locked picks</h2><p>No controls, no ambiguity—this is what you&apos;re backing.</p></div><span><LockKeyhole size={14}/> Locked</span></div>
@@ -172,7 +177,7 @@ function LockedLeaguePicks({entries,fixtures,challenges}:{entries:PicksPageData[
         <div className="outcome-lanes">{(["home","draw","away"] as Outcome[]).map(outcome=>{
           const backers=picks.filter(pick=>pick.outcome===outcome);
           const label=outcome==="home"?fixture.home:outcome==="away"?fixture.away:"Draw";
-          return <div className="outcome-lane" key={outcome}><div className="outcome-lane-head"><b>{label}</b><span>{backers.length}</span></div>{backers.length?backers.map(pick=>{const potential=Math.round(pick.stake*pick.odds*100)/100;const result=pick.isCorrect===null?null:pick.isCorrect?potential:0;return <div className="watch-pick" key={`${pick.userId}-${pick.kind}`}><Link href={`/players/${pick.userId}`}><ClubCrest seed={pick.userId} label={pick.name} imageUrl={pick.crestUrl} size="sm"/></Link><div><Link className="player-name-link" href={`/players/${pick.userId}`}>{pick.name}</Link><small>{pick.stake} pts · {pick.kind==="gotw"?"GOTW":"Own"}{pick.source==="auto"?" · Auto":""}</small></div><strong>{result===null?`+${potential}`:`${result>0?"+":""}${result}`}</strong></div>}):<p className="no-backs">No backers</p>}</div>
+          return <div className="outcome-lane" key={outcome}><div className="outcome-lane-head"><b>{label}</b><span>{backers.length}</span></div>{backers.length?backers.map(pick=>{const potential=Math.round(pick.stake*pick.odds*100)/100;const result=pick.isCorrect===null?null:pick.isCorrect?potential:0;const kindLabel=pick.kind==="gotw"?"GOTW":pick.kind==="special"?"Manager’s Special":"Own";return <div className="watch-pick" key={`${pick.userId}-${pick.kind}`}><Link href={`/players/${pick.userId}`}><ClubCrest seed={pick.userId} label={pick.name} imageUrl={pick.crestUrl} size="sm"/></Link><div><Link className="player-name-link" href={`/players/${pick.userId}`}>{pick.name}</Link><small>{pick.stake} pts · {kindLabel}{pick.source==="auto"?" · Auto":""}</small></div><strong>{result===null?`+${potential}`:`${result>0?"+":""}${result}`}</strong></div>}):<p className="no-backs">No backers</p>}</div>
         })}</div>
       </article>;
     })}</div>:<div className="card"><p className="subtle" style={{margin:0}}>No submissions were recorded for this week.</p></div>}

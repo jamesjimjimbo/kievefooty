@@ -12,6 +12,7 @@ export async function saveWeeklyPicks(input:unknown){
   const {error}=await supabase.rpc("submit_weekly_picks",{
     p_week_id:v.weekId,p_gotw_fixture_id:v.gotwFixtureId,p_gotw_outcome:v.gotwOutcome,p_gotw_stake:v.gotwStake,
     p_own_fixture_id:v.ownFixtureId,p_own_outcome:v.ownOutcome,p_own_stake:v.ownStake,
+    p_special_fixture_id:v.specialFixtureId,p_special_outcome:v.specialOutcome,
   });
   if(error)return {error:error.message};
   revalidatePath("/picks");return {success:true};

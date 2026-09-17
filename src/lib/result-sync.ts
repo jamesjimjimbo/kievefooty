@@ -1,7 +1,7 @@
 import type {SupabaseClient} from "@supabase/supabase-js";
 import {fetchCompetitionMatches,findProviderMatch,providerFixtureState,type LocalFixtureMatch} from "@/lib/football-data";
 
-type ResultFixture=LocalFixtureMatch&{status:string;home_score:number|null;away_score:number|null};
+type ResultFixture=LocalFixtureMatch&{status:string;home_score:number|null;away_score:number|null;provider_competition_code:string|null};
 type ResultWeek={
   id:string;label:string;start_date:string;end_date:string;competition_code:string;status:string;
   fixtures:ResultFixture[];
@@ -20,7 +20,7 @@ export async function syncWeeklyResults(supabase:SupabaseClient,apiKey:string):P
     revisitFrom.setUTCDate(revisitFrom.getUTCDate()-14);
     const {data,error}=await supabase
       .from("competition_weeks")
-      .select("id,label,start_date,end_date,competition_code,status,fixtures(id,provider_match_id,kickoff_at,status,home_score,away_score,home:teams!fixtures_home_team_id_fkey(name),away:teams!fixtures_away_team_id_fkey(name))")
+      .select("id,label,start_date,end_date,competition_code,status,fixtures(id,provider_match_id,provider_competition_code,kickoff_at,status,home_score,away_score,home:teams!fixtures_home_team_id_fkey(name),away:teams!fixtures_away_team_id_fkey(name))")
       .in("status",["open","locked","settled"])
       .eq("is_active_betting_week",true)
       .lte("lock_at",new Date().toISOString())
@@ -38,11 +38,16 @@ export async function syncWeeklyResults(supabase:SupabaseClient,apiKey:string):P
         autoSubmitted=Number((autoPickResult as {created?:number}|null)?.created??0);
         summary.autoSubmissions+=autoSubmitted;
       }
-      const providerMatches=await fetchCompetitionMatches({
-        competition:week.competition_code,dateFrom:week.start_date,dateTo:week.end_date,apiKey,
-      });
+      const competitionCodes=[...new Set([week.competition_code,...week.fixtures.map(fixture=>fixture.provider_competition_code).filter((code):code is string=>Boolean(code))])];
+      const providerMatchesByCompetition=new Map<string,Awaited<ReturnType<typeof fetchCompetitionMatches>>>();
+      for(const competition of competitionCodes){
+        providerMatchesByCompetition.set(competition,await fetchCompetitionMatches({
+          competition,dateFrom:week.start_date,dateTo:week.end_date,apiKey,
+        }));
+      }
       let matched=0;
       for(const fixture of week.fixtures){
+        const providerMatches=providerMatchesByCompetition.get(fixture.provider_competition_code??week.competition_code)??[];
         const providerMatch=findProviderMatch(fixture,providerMatches);
         if(!providerMatch)continue;
         matched+=1;summary.matchedFixtures+=1;

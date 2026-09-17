@@ -7,7 +7,7 @@ import type { WeeklyConversation,WeeklyReaction } from "@/lib/weekly-conversatio
 import {featuredStreakMap,type FeaturedStreakSubmission} from "@/lib/featured-streaks";
 export const metadata:Metadata={title:"Picks"};export const dynamic="force-dynamic";
 type OddsRow={home:number|string;draw:number|string;away:number|string;captured_at:string};
-type FixtureRow={id:string;kickoff_at:string;is_gotw:boolean;status:string;home_score:number|null;away_score:number|null;home:{name:string}|null;away:{name:string}|null;fixture_odds:OddsRow[]};
+type FixtureRow={id:string;kickoff_at:string;is_gotw:boolean;is_manager_special:boolean;status:string;home_score:number|null;away_score:number|null;home:{name:string}|null;away:{name:string}|null;fixture_odds:OddsRow[]};
 type ProfileRow={id:string;display_name:string;crest_url:string|null};
 type ChallengeRow={opponent_id:string};
 type WeekChallengeRow={
@@ -18,7 +18,7 @@ type StandingRow={user_id:string;display_name:string;score:number|string};
 type ProjectedStandingRow=StandingRow&{season_projection:number|string};
 type LeagueSubmissionRow={
   id:string;user_id:string;source:"manual"|"auto";commentary:string|null;profiles:{display_name:string;crest_url:string|null}|null;
-  picks:{fixture_id:string;kind:"gotw"|"own";selected_outcome:Outcome;stake:number|string;odds:number|string;is_correct:boolean|null}[];
+  picks:{fixture_id:string;kind:"gotw"|"own"|"special";selected_outcome:Outcome;stake:number|string;odds:number|string;is_correct:boolean|null}[];
 };
 type ReactionRow={submission_id:string;user_id:string;reaction:WeeklyReaction};
 type ReplyRow={id:string;submission_id:string;user_id:string;body:string;created_at:string;profiles:{display_name:string;crest_url:string|null}|null};
@@ -40,7 +40,7 @@ export default async function PicksPage(){
   const locked=week.status!=="open"||hasWeekLocked(week.lock_at);
   const {data:previousWeek}=await supabase.from("competition_weeks").select("id,label").eq("status","settled").eq("is_active_betting_week",true).lt("start_date",week.start_date).order("start_date",{ascending:false}).limit(1).maybeSingle();
   const [{data:rows},{data:submission},{data:ledger},{data:profiles},{data:challenges},{data:firstStandings},{data:secondStandings},{data:overallStandings},{data:projectedStandings},{data:leagueSubmissions},{data:previousSubmissions},{data:weekChallenges},{data:streakData}]=await Promise.all([
-    supabase.from("fixtures").select("id,kickoff_at,is_gotw,status,home_score,away_score,home:teams!fixtures_home_team_id_fkey(name),away:teams!fixtures_away_team_id_fkey(name),fixture_odds(home,draw,away,captured_at)").eq("competition_week_id",week.id).eq("is_eligible",true).order("kickoff_at"),
+    supabase.from("fixtures").select("id,kickoff_at,is_gotw,is_manager_special,status,home_score,away_score,home:teams!fixtures_home_team_id_fkey(name),away:teams!fixtures_away_team_id_fkey(name),fixture_odds(home,draw,away,captured_at)").eq("competition_week_id",week.id).eq("is_eligible",true).order("kickoff_at"),
     supabase.from("weekly_submissions").select("source,commentary,picks(fixture_id,kind,selected_outcome,stake)").eq("user_id",user.id).eq("competition_week_id",week.id).maybeSingle(),
     supabase.from("points_ledger").select("amount").eq("user_id",user.id),
     supabase.from("profiles").select("id,display_name,crest_url").order("display_name"),
@@ -78,9 +78,9 @@ export default async function PicksPage(){
   const oddsMultiplier=week.is_casino?1+Number(week.casino_odds_boost??0.05):1;
   const fixtures:Fixture[]=fixtureRows.map(row=>{
     const latest=[...(row.fixture_odds??[])].sort((a,b)=>Date.parse(b.captured_at)-Date.parse(a.captured_at))[0];
-    return {id:row.id,home:row.home?.name??"Home",away:row.away?.name??"Away",kickoff:new Intl.DateTimeFormat("en-US",{weekday:"short",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(row.kickoff_at)),gotw:row.is_gotw,status:row.status,homeScore:row.home_score,awayScore:row.away_score,odds:{home:oddsMultiplier*Number(latest?.home??1),draw:oddsMultiplier*Number(latest?.draw??1),away:oddsMultiplier*Number(latest?.away??1)}};
+    return {id:row.id,home:row.home?.name??"Home",away:row.away?.name??"Away",kickoff:new Intl.DateTimeFormat("en-US",{weekday:"short",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(row.kickoff_at)),gotw:row.is_gotw,special:row.is_manager_special,status:row.status,homeScore:row.home_score,awayScore:row.away_score,odds:{home:oddsMultiplier*Number(latest?.home??1),draw:oddsMultiplier*Number(latest?.draw??1),away:oddsMultiplier*Number(latest?.away??1)}};
   });
-  const existing=(submission?.picks??[]) as {fixture_id:string;kind:"gotw"|"own";selected_outcome:Outcome;stake:number}[];
+  const existing=(submission?.picks??[]) as {fixture_id:string;kind:"gotw"|"own"|"special";selected_outcome:Outcome;stake:number}[];
   const standingRows=(overallStandings??[]) as StandingRow[];
   const rank=Math.max(1,standingRows.findIndex(row=>row.user_id===user.id)+1);
   const used=new Set(((challenges??[]) as ChallengeRow[]).map(c=>c.opponent_id));
@@ -109,7 +109,7 @@ export default async function PicksPage(){
   const data:PicksPageData={
     week:{id:week.id,number:week.number,label:week.label,lockAt:week.lock_at,lockLabel:new Intl.DateTimeFormat("en-US",{weekday:"long",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(week.lock_at)),competition:week.is_casino?"Casino":week.competition_code==="FAC"?"FA Cup":"Premier League",featuredLabel:week.number===5?"Turd Bowl of the Week":"Game of the Week",featuredShortLabel:week.number===5?"TBOTW":"GOTW",oddsLabel:latestOddsCapture?new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(latestOddsCapture)):undefined},
     bankroll:(ledger??[]).reduce((sum,row)=>sum+Number(row.amount),0),rank,fixtures,
-    existing:{gotw:existing.find(p=>p.kind==="gotw"),own:existing.find(p=>p.kind==="own"),source:submission?.source,commentary:submission?.commentary??""},
+    existing:{gotw:existing.find(p=>p.kind==="gotw"),own:existing.find(p=>p.kind==="own"),special:existing.find(p=>p.kind==="special"),source:submission?.source,commentary:submission?.commentary??""},
     currentUserId:user.id,conversations:conversationRows,
     opponents:opponentRows.filter(p=>!used.has(p.id)),challengeTokens:Math.max(0,opponentRows.length-used.size),
     personalChallenges:mappedWeekChallenges.filter(challenge=>challenge.challengerId===user.id||challenge.opponentId===user.id).map(challenge=>({

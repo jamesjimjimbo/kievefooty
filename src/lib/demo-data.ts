@@ -1,6 +1,6 @@
 export type Outcome = "home" | "draw" | "away";
 export type Fixture = {
-  id: string; home: string; away: string; kickoff: string; gotw?: boolean;
+  id: string; home: string; away: string; kickoff: string; gotw?: boolean; special?: boolean;
   odds: Record<Outcome, number>;
   status?: string | null; homeScore?: number | null; awayScore?: number | null;
 };

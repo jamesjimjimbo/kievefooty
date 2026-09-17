@@ -195,6 +195,10 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 }
 .odd.selected small { color: #ded9ff; }
 .stake-wrap { display: flex; align-items: center; justify-content: space-between; margin-top: 15px; padding-top: 14px; border-top: 1px solid var(--line); }
+.manager-special { margin-top: 26px; padding: 24px; border: 1px solid #ffd58b; border-radius: var(--radius); background: linear-gradient(135deg,#fff9e9,#fff2d6); }
+.manager-special .section-label { align-items: end; }
+.manager-special > .card { border-color: #f2c771; box-shadow: 0 16px 38px rgba(177,111,0,.1); }
+.stake-wrap.fixed-stake .pill { color: #814d00; border-color: #efc05d; background: #fff4cf; }
 .stepper { display: flex; align-items: center; gap: 14px; font-weight: 950; }
 .stepper button { width: 37px; height: 37px; color: var(--primary); border: 1px solid #ddd7ff; border-radius: 11px; background: var(--lavender); font-size: 20px; }
 .primary {
