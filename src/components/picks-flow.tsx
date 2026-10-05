@@ -1,6 +1,7 @@
 "use client";
 import { useEffect,useRef,useState,useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { CheckCircle2,Clock3,Hammer,LoaderCircle,LockKeyhole,MessageCircle,RefreshCw,ShieldQuestion,Swords } from "lucide-react";
 import type { Fixture,Outcome } from "@/lib/demo-data";
 import { AppShell } from "@/components/app-shell";
@@ -56,6 +57,7 @@ export function PicksFlow({data}:{data:PicksPageData|null}){
 }
 
 function LivePicks({data}:{data:PicksPageData}){
+  const router=useRouter();
   const gotw=data.fixtures.find(f=>f.gotw)!;const special=data.fixtures.find(f=>f.special);const others=data.fixtures.filter(f=>!f.gotw&&!f.special);
   const [gotwPick,setGotwPick]=useState<Outcome|undefined>(data.existing.gotw?.selected_outcome);
   const [otherId,setOtherId]=useState(data.existing.own?.fixture_id??others[0]?.id);
@@ -78,7 +80,7 @@ function LivePicks({data}:{data:PicksPageData}){
     :"";
   const lastSaved=useRef(initialSignature);
   const adjustGotw=(n:number)=>{setMessage("");setGotwStake(n);setOtherStake(10-n)};const adjustOther=(n:number)=>{setMessage("");setOtherStake(n);setGotwStake(10-n)};
-  const challenge=()=>startTransition(async()=>{if(!opponent)return;const result=await createChallenge({weekId:data.week.id,opponentId:opponent});setMessage(result.error??"Challenge sent. No acceptance needed.")});
+  const challenge=()=>startTransition(async()=>{if(!opponent)return;const result=await createChallenge({weekId:data.week.id,opponentId:opponent});setMessage(result.error??"Challenge sent. No acceptance needed.");if(!result.error)router.refresh()});
   const saveComment=()=>startCommentTransition(async()=>{setCommentMessage("");const result=await saveWeeklyComment({weekId:data.week.id,comment});setCommentMessage(result.error??(comment.trim()?"Statement saved. It stays hidden until lock.":"Statement removed."))});
   useEffect(()=>{
     if(data.locked||!signature||signature===lastSaved.current)return;
@@ -97,6 +99,9 @@ function LivePicks({data}:{data:PicksPageData}){
     },650);
     return ()=>window.clearTimeout(timer);
   },[data.locked,data.week.id,gotw.id,gotwPick,gotwStake,other,otherPick,otherStake,special,specialPick,retryNonce,signature]);
+  useEffect(()=>{
+    if(!data.opponents.some(player=>player.id===opponent))setOpponent(data.opponents[0]?.id??"");
+  },[data.opponents,opponent]);
   return <AppShell><main className="content content-wide picks-page">
     <div className="picks-topline"><div><span>{data.week.competition} · Week {data.week.number}</span><b>{data.week.label}</b></div><span className={`pill ${data.locked?"":"live"}`}><Clock3 size={13}/>{data.locked?"Locked":`Locks ${data.week.lockLabel}`}</span></div>
     {data.previousWeek&&<WeeklyRecap recap={data.previousWeek}/>}
