@@ -449,6 +449,18 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .projection-toggle.large > div { display: grid; }
 .projection-toggle.large small { color: var(--muted); font-weight: 650; }
 .standings-grid { display: grid; gap: 14px; }
+.this-week-standings { overflow: hidden; margin-bottom: 14px; padding: 0; box-shadow: none; }
+.this-week-standings > header { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 17px 18px; color: white; background: linear-gradient(120deg,#3723b5,#694cf4); }
+.this-week-standings > header h2 { margin: 1px 0 3px; color: white; }
+.this-week-standings > header p:last-child { margin: 0; color: rgba(255,255,255,.76); font-size: 10px; }
+.this-week-standings > header .eyebrow { color: #8ff7ed; }
+.live-dot { display: inline-flex; align-items: center; gap: 6px; padding: 7px 10px; border: 1px solid rgba(255,255,255,.25); border-radius: 999px; background: rgba(255,255,255,.12); font-size: 9px; font-weight: 950; text-transform: uppercase; letter-spacing: .08em; }
+.live-dot::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #8ff7ed; box-shadow: 0 0 0 4px rgba(143,247,237,.15); }
+.this-week-table .standing-row { grid-template-columns: 27px minmax(0,1fr) auto 52px; min-height: 58px; padding: 0 13px; }
+.games-left { padding: 5px 7px; border-radius: 999px; font-size: 8px; font-weight: 900; white-space: nowrap; }
+.games-left.pending { color: #7b4a00; background: #fff1cf; }
+.games-left.complete { color: #087f72; background: #dcfaf4; }
+.week-points { color: var(--primary); text-align: right; font-size: 16px; font-weight: 950; }
 .standings-card { overflow: hidden; padding: 0; box-shadow: none; }
 .standings-card + .standings-card { margin-top: 0; }
 .standing-card-head { min-height: 103px; padding: 17px 18px 14px; border-bottom: 1px solid var(--line); background: linear-gradient(135deg,#fff,#f8f7ff); }
