@@ -7,8 +7,7 @@ import {ClubCrest} from "./club-crest";
 
 export type StandingPlayer={
   id:string;name:string;crestUrl:string|null;initials:string;first:number;second:number;overall:number;
-  projected:number;seasonProjection:number;accuracyCorrect:number;accuracyTotal:number;featuredStreak:number;
-  weekScore:number;weekGamesLeft:number;weekPickCount:number;me:boolean;
+  projected:number;seasonProjection:number;accuracyCorrect:number;accuracyTotal:number;featuredStreak:number;me:boolean;
 };
 export type StandingHistoryRow={
   week_number:number;week_label:string;week_end:string;user_id:string;display_name:string;
@@ -19,10 +18,9 @@ export type ChallengeHistory={
   opponentId:string;opponent:string;opponentCrestUrl:string|null;challengerNet:number|null;opponentNet:number|null;settled:boolean;
 };
 
-export function StandingsBoard({players,history,challenges,currentWeek}:{players:StandingPlayer[];history:StandingHistoryRow[];challenges:ChallengeHistory[];currentWeek:{number:number;label:string}|null}){
+export function StandingsBoard({players,history,challenges}:{players:StandingPlayer[];history:StandingHistoryRow[];challenges:ChallengeHistory[]}){
   return <AppShell><main className="content content-wide">
     <div className="page-head"><div><p className="eyebrow">2026 / 27</p><h1>Standings</h1><p className="subtle">Every competition, all in one place.</p></div></div>
-    {currentWeek&&<ThisWeekCompetition players={players} week={currentWeek}/>}
     <section className="standings-grid">
       <ScoreCompetition title="First Half" prize="15%" description="Normal weekly results in the first half." players={players} scoreKey="first"/>
       <ScoreCompetition title="Second Half" prize="15%" description="Normal weekly results in the second half." players={players} scoreKey="second"/>
@@ -33,13 +31,6 @@ export function StandingsBoard({players,history,challenges,currentWeek}:{players
     <StandingsHistory rows={history}/>
     <p className="standings-footnote">Weekly 10-point credits never count here. Projected Full Competition scores are informational and do not alter official points.</p>
   </main></AppShell>;
-}
-
-const formatPoints=(value:number)=>Number.isInteger(value)?String(value):value.toFixed(2).replace(/0+$/,"").replace(/\.$/,"");
-
-function ThisWeekCompetition({players,week}:{players:StandingPlayer[];week:{number:number;label:string}}){
-  const sorted=[...players].sort((a,b)=>b.weekScore-a.weekScore||a.weekGamesLeft-b.weekGamesLeft||a.name.localeCompare(b.name));
-  return <section className="card this-week-standings"><header><div><p className="eyebrow">Week {week.number} · Live</p><h2>This week</h2><p>{week.label} returns so far. Scores update as results land.</p></div><span className="live-dot">Live</span></header><div className="this-week-table">{sorted.map((player,index)=><div className={`standing-row ${player.me?"me":""}`} key={player.id}><span className="rank">{index+1}</span><PlayerCell player={player}/><span className={`games-left ${player.weekGamesLeft>0?"pending":"complete"}`}>{player.weekPickCount===0?"No card":player.weekGamesLeft>0?`${player.weekGamesLeft} ${player.weekGamesLeft===1?"game":"games"} left`:"All finished"}</span><span className="week-points">{formatPoints(player.weekScore)}</span></div>)}</div></section>;
 }
 
 function ChallengeLedger({rows}:{rows:ChallengeHistory[]}){

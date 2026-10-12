@@ -105,6 +105,7 @@ function LivePicks({data}:{data:PicksPageData}){
   return <AppShell><main className="content content-wide picks-page">
     <div className="picks-topline"><div><span>{data.week.competition} · Week {data.week.number}</span><b>{data.week.label}</b></div><span className={`pill ${data.locked?"":"live"}`}><Clock3 size={13}/>{data.locked?"Locked":`Locks ${data.week.lockLabel}`}</span></div>
     {data.previousWeek&&<WeeklyRecap recap={data.previousWeek}/>}
+    {data.locked&&<ThisWeekStandings entries={data.leaguePicks} week={data.week} currentUserId={data.currentUserId}/>}
     <div className="picks-layout"><div>
       {data.locked?<LockedPickReceipt gotw={gotw} gotwPick={gotwPick} gotwStake={gotwStake} other={other} otherPick={otherPick} otherStake={otherStake} special={special} specialPick={specialPick} source={data.existing.source} featuredLabel={data.week.featuredLabel}/>:<><div className="pick-choice-grid">
         <section className="pick-choice">
@@ -137,6 +138,17 @@ function LivePicks({data}:{data:PicksPageData}){
       <StandingsSnapshot rows={data.standings}/>
     </aside></div>
   </main></AppShell>;
+}
+
+const formatWeeklyPoints=(value:number)=>Number.isInteger(value)?String(value):value.toFixed(2).replace(/0+$/,"").replace(/\.$/,"");
+
+function ThisWeekStandings({entries,week,currentUserId}:{entries:PicksPageData["leaguePicks"];week:PicksPageData["week"];currentUserId:string}){
+  const rows=entries.map(entry=>({
+    ...entry,
+    score:entry.picks.reduce((sum,pick)=>sum+(pick.isCorrect===true?pick.stake*pick.odds:0),0),
+    gamesLeft:entry.picks.filter(pick=>pick.isCorrect===null).length,
+  })).sort((a,b)=>b.score-a.score||a.gamesLeft-b.gamesLeft||a.name.localeCompare(b.name));
+  return <section className="card this-week-standings home-week-standings"><header><div><p className="eyebrow">Week {week.number} · Live</p><h2>This week</h2><p>{week.label} returns so far. Scores update as results land.</p></div><span className="live-dot">Live</span></header><div className="this-week-table">{rows.map((player,index)=><div className={`standing-row ${player.userId===currentUserId?"me":""}`} key={player.userId}><span className="rank">{index+1}</span><Link className="player player-link" href={`/players/${player.userId}`}><ClubCrest seed={player.userId} label={player.name} imageUrl={player.crestUrl} size="sm"/><span>{player.name}{player.userId===currentUserId&&<small className="you-label">You</small>}</span></Link><span className={`games-left ${player.gamesLeft>0?"pending":"complete"}`}>{player.gamesLeft>0?`${player.gamesLeft} ${player.gamesLeft===1?"game":"games"} left`:"All finished"}</span><span className="week-points">{formatWeeklyPoints(player.score)}</span></div>)}</div></section>;
 }
 
 function LockedPickReceipt({gotw,gotwPick,gotwStake,other,otherPick,otherStake,special,specialPick,source,featuredLabel}:{
