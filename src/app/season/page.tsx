@@ -17,7 +17,7 @@ type WeekRow={
 const date=(value:string)=>new Date(`${value}T12:00:00`);
 const shortDate=(value:string)=>new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric"}).format(date(value));
 const fullDate=(value:string)=>new Intl.DateTimeFormat("en-US",{weekday:"short",month:"short",day:"numeric"}).format(date(value));
-const lockLabel=(value:string)=>new Intl.DateTimeFormat("en-US",{weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(value));
+const lockLabel=(value:string)=>`${new Intl.DateTimeFormat("en-US",{weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(value))} ET`;
 
 type CalendarKind="regular"|"facup"|"break"|"casino"|"finale";
 type CalendarEvent={kind:CalendarKind;label:string;detail:string};

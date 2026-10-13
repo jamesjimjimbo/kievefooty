@@ -42,7 +42,7 @@ export default async function CompetitionsPage(){
     id:row.id,slug:row.slug,title:row.title,description:row.description,
     selectionHelp:row.selection_help,minSelections:row.min_selections,maxSelections:row.max_selections,
     payoutLabel:row.payout_label,
-    lockLabel:new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(row.lock_at)),
+    lockLabel:`${new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(row.lock_at))} ET`,
     status:row.status==="open"&&new Date(row.lock_at).getTime()<=now?"locked":row.status,
     selected:entries.get(row.id)??[],completed:entries.has(row.id),
     options:[...(row.season_market_options??[])].sort((a,b)=>a.sort_order-b.sort_order).map(option=>({...option,odds:option.odds===null?null:Number(option.odds)})),
