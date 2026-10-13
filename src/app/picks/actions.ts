@@ -21,6 +21,9 @@ export async function saveWeeklyPicks(input:unknown){
 export async function createChallenge(input:{weekId:string;opponentId:string}){
   const supabase=await createClient();if(!supabase)return {error:"Supabase is not configured"};
   const {data:{user}}=await supabase.auth.getUser();if(!user)return {error:"Please sign in again"};
+  const {data:existing,error:lookupError}=await supabase.from("challenges").select("id").eq("challenger_id",user.id).eq("opponent_id",input.opponentId).limit(1).maybeSingle();
+  if(lookupError)return {error:lookupError.message};
+  if(existing)return {error:"You have already challenged this player this season."};
   const {error}=await supabase.from("challenges").insert({competition_week_id:input.weekId,challenger_id:user.id,opponent_id:input.opponentId});
   if(error)return {error:error.message};
   revalidatePath("/picks");return {success:true};

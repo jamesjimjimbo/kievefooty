@@ -44,7 +44,8 @@ export default async function PicksPage(){
     supabase.from("weekly_submissions").select("source,commentary,picks(fixture_id,kind,selected_outcome,stake)").eq("user_id",user.id).eq("competition_week_id",week.id).maybeSingle(),
     supabase.from("points_ledger").select("amount").eq("user_id",user.id),
     supabase.from("profiles").select("id,display_name,crest_url").order("display_name"),
-    supabase.from("challenges").select("opponent_id").eq("challenger_id",user.id).eq("competition_week_id",week.id),
+    // A challenge can be used against each opponent only once for the entire season.
+    supabase.from("challenges").select("opponent_id").eq("challenger_id",user.id),
     supabase.rpc("get_standings",{p_half:"first"}),
     supabase.rpc("get_standings",{p_half:"second"}),
     supabase.rpc("get_standings",{p_half:null}),
