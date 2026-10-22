@@ -30,7 +30,7 @@ export type PicksPageData={
 function FixtureCard({fixture,selection,onSelect,stake,setStake,label,disabled,fixedStake=false}:{fixture:Fixture;selection?:Outcome;onSelect:(o:Outcome)=>void;stake:number;setStake?:(n:number)=>void;label?:string;disabled?:boolean;fixedStake?:boolean}) {
   return <article className="card"><div className="fixture-head"><div><div className="teams">{fixture.home} <span className="subtle">vs</span> {fixture.away}</div><div className="kickoff">{fixture.kickoff}</div></div>{label&&<span className="pill">{label}</span>}</div>
     <div className="odds">{(["home","draw","away"] as Outcome[]).map(o=><button disabled={disabled} type="button" key={o} onClick={()=>onSelect(o)} className={`odd ${selection===o?"selected":""}`} aria-pressed={selection===o}><small>{o==="home"?fixture.home:o==="away"?fixture.away:"Draw"}</small>{fixture.odds[o].toFixed(2)}</button>)}</div>
-    {selection&&<div className={`stake-wrap ${fixedStake?"fixed-stake":""}`}><div><b>{fixedStake?"Manager’s stake":"Stake"}</b><div className="kickoff">{fixedStake?"Fixed—no adjusting":"Adjust your split"}</div></div>{fixedStake?<span className="pill">{stake} points</span>:<div className="stepper"><button disabled={disabled} type="button" onClick={()=>setStake?.(Math.max(1,stake-1))} aria-label="Reduce stake">−</button><span>{stake}</span><button disabled={disabled} type="button" onClick={()=>setStake?.(Math.min(9,stake+1))} aria-label="Increase stake">+</button></div>}</div>}
+    {selection&&<div className={`stake-wrap ${fixedStake?"fixed-stake":""}`}><div><b>{fixedStake?"Bonus stake":"Stake"}</b><div className="kickoff">{fixedStake?"Fixed—no adjusting":"Adjust your split"}</div></div>{fixedStake?<span className="pill">{stake} points</span>:<div className="stepper"><button disabled={disabled} type="button" onClick={()=>setStake?.(Math.max(1,stake-1))} aria-label="Reduce stake">−</button><span>{stake}</span><button disabled={disabled} type="button" onClick={()=>setStake?.(Math.min(9,stake+1))} aria-label="Increase stake">+</button></div>}</div>}
   </article>;
 }
 
@@ -49,6 +49,10 @@ function DockersDerbyIdentity(){
     </div>
     <p><b>Dockside grudge, back on the clock.</b> Two longshoremen clubs, rival yards and the old 1926 “scabs” tale—working-waterfront folklore with a century-long hangover.</p>
   </div>;
+}
+
+function isElClasico(fixture?:Fixture){
+  return Boolean(fixture&&fixture.home==="Barcelona"&&fixture.away==="Real Madrid");
 }
 
 export function PicksFlow({data}:{data:PicksPageData|null}){
@@ -119,7 +123,7 @@ function LivePicks({data}:{data:PicksPageData}){
           {other&&<FixtureCard fixture={other} selection={otherPick} onSelect={o=>{setMessage("");setOtherPick(o)}} stake={otherStake} setStake={adjustOther} disabled={data.locked}/>}
         </section>
       </div>
-      {special&&<section className="manager-special"><div className="section-label"><div><p className="eyebrow">Five-point bonus bet</p><h2>Manager&apos;s Special of the Week</h2><p className="subtle">The Dockers Derby. Pick the result; the stake is fixed at 5.</p></div><span className="pill">No adjusting</span></div><DockersDerbyIdentity/><FixtureCard fixture={special} selection={specialPick} onSelect={o=>{setMessage("");setSpecialPick(o)}} stake={5} label="SPECIAL" disabled={data.locked} fixedStake/></section>}
+      {special&&<section className="manager-special"><div className="section-label"><div><p className="eyebrow">Five points from the bank</p><h2>{isElClasico(special)?"El Clásico bonus bet":"Manager’s Special of the Week"}</h2><p className="subtle">{isElClasico(special)?"Barcelona vs Real Madrid. Pick the result; this mandatory 5-point stake is separate from your normal 10.":"Pick the result; the stake is fixed at 5."}</p></div><span className="pill">15 total this week</span></div>{!isElClasico(special)&&<DockersDerbyIdentity/>}<FixtureCard fixture={special} selection={specialPick} onSelect={o=>{setMessage("");setSpecialPick(o)}} stake={5} label={isElClasico(special)?"EL CLÁSICO":"SPECIAL"} disabled={data.locked} fixedStake/></section>}
       {message&&<div className={message.toLowerCase().includes("error")?"notice":"saved"}><CheckCircle2 size={20}/>{message}</div>}
       <div className={`autosave-bar ${saveStatus}`}>
         {!signature?<><Clock3 size={18}/><div><b>Finish your card</b><span>It will save automatically as soon as every required outcome is selected.</span></div></>
@@ -157,7 +161,7 @@ function LockedPickReceipt({gotw,gotwPick,gotwStake,other,otherPick,otherStake,s
   const picks=[
     gotwPick?{fixture:gotw,outcome:gotwPick,stake:gotwStake,label:featuredLabel}:null,
     other&&otherPick?{fixture:other,outcome:otherPick,stake:otherStake,label:"Your other match"}:null,
-    special&&specialPick?{fixture:special,outcome:specialPick,stake:5,label:"Manager's Special"}:null,
+    special&&specialPick?{fixture:special,outcome:specialPick,stake:5,label:isElClasico(special)?"El Clásico bonus":"Manager's Special"}:null,
   ].filter((pick):pick is {fixture:Fixture;outcome:Outcome;stake:number;label:string}=>Boolean(pick));
   return <section className="locked-pick-receipt">
     <div className="locked-receipt-head"><div><p className="eyebrow">Your final card</p><h2>Your locked picks</h2><p>No controls, no ambiguity—this is what you&apos;re backing.</p></div><span><LockKeyhole size={14}/> Locked</span></div>
@@ -211,7 +215,7 @@ function LockedLeaguePicks({entries,fixtures,challenges}:{entries:PicksPageData[
         <div className="outcome-lanes">{(["home","draw","away"] as Outcome[]).map(outcome=>{
           const backers=picks.filter(pick=>pick.outcome===outcome);
           const label=outcome==="home"?fixture.home:outcome==="away"?fixture.away:"Draw";
-          return <div className="outcome-lane" key={outcome}><div className="outcome-lane-head"><b>{label}</b><span>{backers.length}</span></div>{backers.length?backers.map(pick=>{const potential=Math.round(pick.stake*pick.odds*100)/100;const result=pick.isCorrect===null?null:pick.isCorrect?potential:0;const kindLabel=pick.kind==="gotw"?"GOTW":pick.kind==="special"?"Manager’s Special":"Own";return <div className="watch-pick" key={`${pick.userId}-${pick.kind}`}><Link href={`/players/${pick.userId}`}><ClubCrest seed={pick.userId} label={pick.name} imageUrl={pick.crestUrl} size="sm"/></Link><div><Link className="player-name-link" href={`/players/${pick.userId}`}>{pick.name}</Link><small>{pick.stake} pts · {kindLabel}{pick.source==="auto"?" · Auto":""}</small></div><strong>{result===null?`+${potential}`:`${result>0?"+":""}${result}`}</strong></div>}):<p className="no-backs">No backers</p>}</div>
+          return <div className="outcome-lane" key={outcome}><div className="outcome-lane-head"><b>{label}</b><span>{backers.length}</span></div>{backers.length?backers.map(pick=>{const potential=Math.round(pick.stake*pick.odds*100)/100;const result=pick.isCorrect===null?null:pick.isCorrect?potential:0;const kindLabel=pick.kind==="gotw"?"GOTW":pick.kind==="special"?"Bonus bet":"Own";return <div className="watch-pick" key={`${pick.userId}-${pick.kind}`}><Link href={`/players/${pick.userId}`}><ClubCrest seed={pick.userId} label={pick.name} imageUrl={pick.crestUrl} size="sm"/></Link><div><Link className="player-name-link" href={`/players/${pick.userId}`}>{pick.name}</Link><small>{pick.stake} pts · {kindLabel}{pick.source==="auto"?" · Auto":""}</small></div><strong>{result===null?`+${potential}`:`${result>0?"+":""}${result}`}</strong></div>}):<p className="no-backs">No backers</p>}</div>
         })}</div>
       </article>;
     })}</div>:<div className="card"><p className="subtle" style={{margin:0}}>No submissions were recorded for this week.</p></div>}
