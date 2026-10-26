@@ -1,5 +1,5 @@
 "use client";
-import { useEffect,useRef,useState,useTransition } from "react";
+import { useEffect,useMemo,useRef,useState,useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CheckCircle2,Clock3,Hammer,LoaderCircle,LockKeyhole,MessageCircle,RefreshCw,ShieldQuestion,Swords } from "lucide-react";
@@ -13,7 +13,7 @@ import type { WeeklyConversation } from "@/lib/weekly-conversations";
 type ExistingPick={fixture_id:string;kind:"gotw"|"own"|"special";selected_outcome:Outcome;stake:number};
 export type PicksPageData={
   week:{id:string;number:number;label:string;lockAt:string;lockLabel:string;competition:string;featuredLabel:string;featuredShortLabel:string;oddsLabel?:string};bankroll:number;rank:number;fixtures:Fixture[];
-  existing:{gotw?:ExistingPick;own?:ExistingPick;special?:ExistingPick;source?:string;commentary?:string};opponents:{id:string;display_name:string}[];challengeTokens:number;locked:boolean;
+  existing:{gotw?:ExistingPick;own?:ExistingPick;specials:ExistingPick[];source?:string;commentary?:string};opponents:{id:string;display_name:string}[];challengeTokens:number;locked:boolean;
   personalChallenges:{id:string;direction:"incoming"|"outgoing";otherId:string;otherName:string;otherCrestUrl:string|null}[];
   currentUserId:string;conversations:WeeklyConversation[];
   standings:{
@@ -59,8 +59,16 @@ function isMarathonSpecial(fixture?:Fixture){
   return Boolean(fixture&&fixture.home==="Under 3:55"&&fixture.away==="Over 3:55");
 }
 
+function isBatesColby(fixture?:Fixture){
+  return Boolean(fixture&&fixture.home==="Colby"&&fixture.away==="Bates");
+}
+
 function specialStakeFor(fixture?:Fixture){
   return isMarathonSpecial(fixture)?10:5;
+}
+
+function hasFixtureLocked(fixture:Fixture){
+  return Boolean(fixture.kickoffAt&&Date.now()>=Date.parse(fixture.kickoffAt));
 }
 
 export function PicksFlow({data}:{data:PicksPageData|null}){
@@ -70,11 +78,11 @@ export function PicksFlow({data}:{data:PicksPageData|null}){
 
 function LivePicks({data}:{data:PicksPageData}){
   const router=useRouter();
-  const gotw=data.fixtures.find(f=>f.gotw)!;const special=data.fixtures.find(f=>f.special);const others=data.fixtures.filter(f=>!f.gotw&&!f.special);
+  const gotw=data.fixtures.find(f=>f.gotw)!;const specials=useMemo(()=>data.fixtures.filter(f=>f.special),[data.fixtures]);const others=useMemo(()=>data.fixtures.filter(f=>!f.gotw&&!f.special),[data.fixtures]);
   const [gotwPick,setGotwPick]=useState<Outcome|undefined>(data.existing.gotw?.selected_outcome);
   const [otherId,setOtherId]=useState(data.existing.own?.fixture_id??others[0]?.id);
   const [otherPick,setOtherPick]=useState<Outcome|undefined>(data.existing.own?.selected_outcome);
-  const [specialPick,setSpecialPick]=useState<Outcome|undefined>(data.existing.special?.selected_outcome);
+  const [specialPicks,setSpecialPicks]=useState<Record<string,Outcome|undefined>>(()=>Object.fromEntries(data.existing.specials.map(p=>[p.fixture_id,p.selected_outcome])));
   const [gotwStake,setGotwStake]=useState(Number(data.existing.gotw?.stake??5));const [otherStake,setOtherStake]=useState(Number(data.existing.own?.stake??5));
   const [message,setMessage]=useState("");
   const [saveStatus,setSaveStatus]=useState<"idle"|"waiting"|"saving"|"saved"|"error">(data.existing.source?"saved":"idle");
@@ -83,13 +91,14 @@ function LivePicks({data}:{data:PicksPageData}){
   const [opponent,setOpponent]=useState(data.opponents[0]?.id??"");const [pending,startTransition]=useTransition();
   const [comment,setComment]=useState(data.existing.commentary??"");const [commentMessage,setCommentMessage]=useState("");const [commentPending,startCommentTransition]=useTransition();
   const other=others.find(f=>f.id===otherId);const total=gotwStake+otherStake;
-  const specialStake=specialStakeFor(special);
-  const specialComplete=!special||Boolean(specialPick);
+  const specialComplete=specials.every(special=>hasFixtureLocked(special)||Boolean(specialPicks[special.id]));
+  const specialSignature=specials.map(special=>`${special.id}:${specialPicks[special.id]??""}:${specialStakeFor(special)}`).join("|");
   const signature=gotwPick&&otherPick&&other&&total===10&&specialComplete
-    ?`${gotw.id}:${gotwPick}:${gotwStake}|${other.id}:${otherPick}:${otherStake}${special&&specialPick?`|${special.id}:${specialPick}:${specialStake}`:""}`
+    ?`${gotw.id}:${gotwPick}:${gotwStake}|${other.id}:${otherPick}:${otherStake}${specialSignature?`|${specialSignature}`:""}`
     :"";
-  const initialSignature=data.existing.gotw&&data.existing.own&&(!special||data.existing.special)
-    ?`${gotw.id}:${data.existing.gotw.selected_outcome}:${Number(data.existing.gotw.stake)}|${data.existing.own.fixture_id}:${data.existing.own.selected_outcome}:${Number(data.existing.own.stake)}${special&&data.existing.special?`|${special.id}:${data.existing.special.selected_outcome}:${Number(data.existing.special.stake)}`:""}`
+  const initialSpecialSignature=specials.map(special=>{const pick=data.existing.specials.find(item=>item.fixture_id===special.id);return pick?`${special.id}:${pick.selected_outcome}:${Number(pick.stake)}`:""}).filter(Boolean).join("|");
+  const initialSignature=data.existing.gotw&&data.existing.own&&data.existing.specials.length===specials.length
+    ?`${gotw.id}:${data.existing.gotw.selected_outcome}:${Number(data.existing.gotw.stake)}|${data.existing.own.fixture_id}:${data.existing.own.selected_outcome}:${Number(data.existing.own.stake)}${initialSpecialSignature?`|${initialSpecialSignature}`:""}`
     :"";
   const lastSaved=useRef(initialSignature);
   const adjustGotw=(n:number)=>{setMessage("");setGotwStake(n);setOtherStake(10-n)};const adjustOther=(n:number)=>{setMessage("");setOtherStake(n);setGotwStake(10-n)};
@@ -104,14 +113,14 @@ function LivePicks({data}:{data:PicksPageData}){
       void saveWeeklyPicks({
         weekId:data.week.id,gotwFixtureId:gotw.id,gotwOutcome:gotwPick,gotwStake,
         ownFixtureId:other.id,ownOutcome:otherPick,ownStake:otherStake,
-        specialFixtureId:special?.id??null,specialOutcome:specialPick??null,
+        specialPicks:specials.filter(special=>Boolean(specialPicks[special.id])).map(special=>({fixtureId:special.id,outcome:specialPicks[special.id]!})),
       }).then(result=>{
         if(result.error){setSaveStatus("error");setSaveError(result.error);return}
         lastSaved.current=signature;setSaveStatus("saved");setSaveError("");
       });
     },650);
     return ()=>window.clearTimeout(timer);
-  },[data.locked,data.week.id,gotw.id,gotwPick,gotwStake,other,otherPick,otherStake,special,specialPick,retryNonce,signature]);
+  },[data.locked,data.week.id,gotw.id,gotwPick,gotwStake,other,otherPick,otherStake,specials,specialPicks,retryNonce,signature]);
   useEffect(()=>{
     if(!data.opponents.some(player=>player.id===opponent))setOpponent(data.opponents[0]?.id??"");
   },[data.opponents,opponent]);
@@ -120,7 +129,7 @@ function LivePicks({data}:{data:PicksPageData}){
     {data.previousWeek&&<WeeklyRecap recap={data.previousWeek}/>}
     {data.locked&&<ThisWeekStandings entries={data.leaguePicks} challenges={data.weekChallenges} week={data.week} currentUserId={data.currentUserId}/>}
     <div className="picks-layout"><div>
-      {data.locked?<LockedPickReceipt gotw={gotw} gotwPick={gotwPick} gotwStake={gotwStake} other={other} otherPick={otherPick} otherStake={otherStake} special={special} specialPick={specialPick} source={data.existing.source} featuredLabel={data.week.featuredLabel}/>:<><div className="pick-choice-grid">
+      {data.locked?<LockedPickReceipt gotw={gotw} gotwPick={gotwPick} gotwStake={gotwStake} other={other} otherPick={otherPick} otherStake={otherStake} specials={specials} specialPicks={specialPicks} source={data.existing.source} featuredLabel={data.week.featuredLabel}/>:<><div className="pick-choice-grid">
         <section className="pick-choice">
           <div className="section-label"><div><p className="eyebrow">Required</p><h2>{data.week.featuredLabel}</h2></div><ShieldQuestion size={21}/></div>
           <div className="card fixture-select fixed-fixture-select"><div><span>{data.week.featuredLabel}</span><b>{gotw.home} vs {gotw.away}</b></div><span className="pill">Fixed</span></div>
@@ -132,7 +141,7 @@ function LivePicks({data}:{data:PicksPageData}){
           {other&&<FixtureCard fixture={other} selection={otherPick} onSelect={o=>{setMessage("");setOtherPick(o)}} stake={otherStake} setStake={adjustOther} disabled={data.locked}/>}
         </section>
       </div>
-      {special&&<section className="manager-special"><div className="section-label"><div><p className="eyebrow">{isMarathonSpecial(special)?"Ten points from the bank":"Five points from the bank"}</p><h2>{isMarathonSpecial(special)?"Marathon over/under":isElClasico(special)?"El Clásico bonus bet":"Manager’s Special of the Week"}</h2><p className="subtle">{isMarathonSpecial(special)?"Under 3:55 or Over 3:55. This fixed 10-point bonus is separate from your normal 10; exactly 3:55 is a push.":isElClasico(special)?"Barcelona vs Real Madrid. Pick the result; this mandatory 5-point stake is separate from your normal 10.":"Pick the result; the stake is fixed at 5."}</p></div><span className="pill">{10+specialStake} total this week</span></div>{!isElClasico(special)&&!isMarathonSpecial(special)&&<DockersDerbyIdentity/>}<FixtureCard fixture={special} selection={specialPick} onSelect={o=>{setMessage("");setSpecialPick(o)}} stake={specialStake} label={isMarathonSpecial(special)?"MARATHON":isElClasico(special)?"EL CLÁSICO":"SPECIAL"} disabled={data.locked} fixedStake allowedOutcomes={isMarathonSpecial(special)?["home","away"]:undefined}/></section>}
+      {specials.map(special=>{const specialStake=specialStakeFor(special);const fixtureLocked=data.locked||hasFixtureLocked(special);return <section className="manager-special" key={special.id}><div className="section-label"><div><p className="eyebrow">{isMarathonSpecial(special)?"Ten points from the bank":"Five points from the bank"}</p><h2>{isMarathonSpecial(special)?"Marathon over/under":isElClasico(special)?"El Clásico bonus bet":isBatesColby(special)?"Maine rivalry bonus bet":"Manager’s Special of the Week"}</h2><p className="subtle">{isMarathonSpecial(special)?"Under 3:55 or Over 3:55. This fixed 10-point bonus is separate from your normal 10; exactly 3:55 is a push.":isElClasico(special)?"Barcelona vs Real Madrid. Pick the result; this mandatory 5-point stake is separate from your normal 10.":isBatesColby(special)?"Bates visits Colby on Tuesday. Pick the 90-minute result; this fixed 5-point bet locks at kickoff.":"Pick the result; the stake is fixed at 5."}</p></div><span className="pill">{fixtureLocked?"Locked":`${specialStake} bonus pts`}</span></div>{!isElClasico(special)&&!isMarathonSpecial(special)&&!isBatesColby(special)&&<DockersDerbyIdentity/>}<FixtureCard fixture={special} selection={specialPicks[special.id]} onSelect={o=>{setMessage("");setSpecialPicks(current=>({...current,[special.id]:o}))}} stake={specialStake} label={isMarathonSpecial(special)?"MARATHON":isElClasico(special)?"EL CLÁSICO":isBatesColby(special)?"BATES–COLBY":"SPECIAL"} disabled={fixtureLocked} fixedStake allowedOutcomes={isMarathonSpecial(special)?["home","away"]:undefined}/></section>})}
       {message&&<div className={message.toLowerCase().includes("error")?"notice":"saved"}><CheckCircle2 size={20}/>{message}</div>}
       <div className={`autosave-bar ${saveStatus}`}>
         {!signature?<><Clock3 size={18}/><div><b>Finish your card</b><span>It will save automatically as soon as every required outcome is selected.</span></div></>
@@ -172,13 +181,13 @@ function ThisWeekStandings({entries,challenges,week,currentUserId}:{entries:Pick
   return <section className="card this-week-standings home-week-standings"><header><div><p className="eyebrow">Week {week.number} · Live</p><h2>This week</h2><p>{week.label}. Pick returns and settled head-to-head transfers are shown separately.</p></div><span className="live-dot">Live</span></header><div className="this-week-table"><div className="this-week-columns" aria-hidden="true"><span>Pick returns</span><span>H2H</span></div>{rows.map((player,index)=><div className={`standing-row ${player.userId===currentUserId?"me":""}`} key={player.userId}><span className="rank">{index+1}</span><Link className="player player-link" href={`/players/${player.userId}`}><ClubCrest seed={player.userId} label={player.name} imageUrl={player.crestUrl} size="sm"/><span>{player.name}{player.userId===currentUserId&&<small className="you-label">You</small>}</span></Link><span className={`games-left ${player.gamesLeft>0?"pending":"complete"}`}>{player.gamesLeft>0?`${player.gamesLeft} ${player.gamesLeft===1?"game":"games"} left`:"All finished"}</span><span className="week-points">{formatWeeklyPoints(player.score)}</span><span className={`week-challenge-points ${player.challengeScore>0?"positive":player.challengeScore<0?"negative":""}`}>{player.challengeScore>0?"+":""}{formatWeeklyPoints(player.challengeScore)}</span></div>)}</div></section>;
 }
 
-function LockedPickReceipt({gotw,gotwPick,gotwStake,other,otherPick,otherStake,special,specialPick,source,featuredLabel}:{
-  gotw:Fixture;gotwPick?:Outcome;gotwStake:number;other?:Fixture;otherPick?:Outcome;otherStake:number;special?:Fixture;specialPick?:Outcome;source?:string;featuredLabel:string;
+function LockedPickReceipt({gotw,gotwPick,gotwStake,other,otherPick,otherStake,specials,specialPicks,source,featuredLabel}:{
+  gotw:Fixture;gotwPick?:Outcome;gotwStake:number;other?:Fixture;otherPick?:Outcome;otherStake:number;specials:Fixture[];specialPicks:Record<string,Outcome|undefined>;source?:string;featuredLabel:string;
 }){
   const picks=[
     gotwPick?{fixture:gotw,outcome:gotwPick,stake:gotwStake,label:featuredLabel}:null,
     other&&otherPick?{fixture:other,outcome:otherPick,stake:otherStake,label:"Your other match"}:null,
-    special&&specialPick?{fixture:special,outcome:specialPick,stake:specialStakeFor(special),label:isMarathonSpecial(special)?"Marathon over/under":isElClasico(special)?"El Clásico bonus":"Manager's Special"}:null,
+    ...specials.map(special=>specialPicks[special.id]?{fixture:special,outcome:specialPicks[special.id]!,stake:specialStakeFor(special),label:isMarathonSpecial(special)?"Marathon over/under":isElClasico(special)?"El Clásico bonus":isBatesColby(special)?"Bates–Colby bonus":"Manager's Special"}:null),
   ].filter((pick):pick is {fixture:Fixture;outcome:Outcome;stake:number;label:string}=>Boolean(pick));
   return <section className="locked-pick-receipt">
     <div className="locked-receipt-head"><div><p className="eyebrow">Your final card</p><h2>Your locked picks</h2><p>No controls, no ambiguity—this is what you&apos;re backing.</p></div><span><LockKeyhole size={14}/> Locked</span></div>

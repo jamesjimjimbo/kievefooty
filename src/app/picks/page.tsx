@@ -79,7 +79,7 @@ export default async function PicksPage(){
   const oddsMultiplier=week.is_casino?1+Number(week.casino_odds_boost??0.05):1;
   const fixtures:Fixture[]=fixtureRows.map(row=>{
     const latest=[...(row.fixture_odds??[])].sort((a,b)=>Date.parse(b.captured_at)-Date.parse(a.captured_at))[0];
-    return {id:row.id,home:row.home?.name??"Home",away:row.away?.name??"Away",kickoff:new Intl.DateTimeFormat("en-US",{weekday:"short",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(row.kickoff_at)),gotw:row.is_gotw,special:row.is_manager_special,status:row.status,homeScore:row.home_score,awayScore:row.away_score,odds:{home:oddsMultiplier*Number(latest?.home??1),draw:oddsMultiplier*Number(latest?.draw??1),away:oddsMultiplier*Number(latest?.away??1)}};
+    return {id:row.id,home:row.home?.name??"Home",away:row.away?.name??"Away",kickoff:new Intl.DateTimeFormat("en-US",{weekday:"short",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(row.kickoff_at)),kickoffAt:row.kickoff_at,gotw:row.is_gotw,special:row.is_manager_special,status:row.status,homeScore:row.home_score,awayScore:row.away_score,odds:{home:oddsMultiplier*Number(latest?.home??1),draw:oddsMultiplier*Number(latest?.draw??1),away:oddsMultiplier*Number(latest?.away??1)}};
   });
   const existing=(submission?.picks??[]) as {fixture_id:string;kind:"gotw"|"own"|"special";selected_outcome:Outcome;stake:number}[];
   const standingRows=(overallStandings??[]) as StandingRow[];
@@ -110,7 +110,7 @@ export default async function PicksPage(){
   const data:PicksPageData={
     week:{id:week.id,number:week.number,label:week.label,lockAt:week.lock_at,lockLabel:`${new Intl.DateTimeFormat("en-US",{weekday:"long",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(week.lock_at))} ET`,competition:week.is_casino?"Casino":week.competition_code==="FAC"?"FA Cup":"Premier League",featuredLabel:week.number===5?"Turd Bowl of the Week":week.number===7?"Cottagers vs Tigers":"Game of the Week",featuredShortLabel:week.number===5?"TBOTW":week.number===7?"CVT":"GOTW",oddsLabel:latestOddsCapture?new Intl.DateTimeFormat("en-US",{month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(latestOddsCapture)):undefined},
     bankroll:(ledger??[]).reduce((sum,row)=>sum+Number(row.amount),0),rank,fixtures,
-    existing:{gotw:existing.find(p=>p.kind==="gotw"),own:existing.find(p=>p.kind==="own"),special:existing.find(p=>p.kind==="special"),source:submission?.source,commentary:submission?.commentary??""},
+    existing:{gotw:existing.find(p=>p.kind==="gotw"),own:existing.find(p=>p.kind==="own"),specials:existing.filter(p=>p.kind==="special"),source:submission?.source,commentary:submission?.commentary??""},
     currentUserId:user.id,conversations:conversationRows,
     opponents:opponentRows.filter(p=>!used.has(p.id)),challengeTokens:Math.max(0,opponentRows.length-used.size),
     personalChallenges:mappedWeekChallenges.filter(challenge=>challenge.challengerId===user.id||challenge.opponentId===user.id).map(challenge=>({

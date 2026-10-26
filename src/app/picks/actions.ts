@@ -9,10 +9,10 @@ export async function saveWeeklyPicks(input:unknown){
   const supabase=await createClient();if(!supabase)return {error:"Supabase is not configured"};
   const {data:{user}}=await supabase.auth.getUser();if(!user)return {error:"Please sign in again"};
   const v=parsed.data;
-  const {error}=await supabase.rpc("submit_weekly_picks",{
+  const {error}=await supabase.rpc("submit_weekly_picks_v2",{
     p_week_id:v.weekId,p_gotw_fixture_id:v.gotwFixtureId,p_gotw_outcome:v.gotwOutcome,p_gotw_stake:v.gotwStake,
     p_own_fixture_id:v.ownFixtureId,p_own_outcome:v.ownOutcome,p_own_stake:v.ownStake,
-    p_special_fixture_id:v.specialFixtureId,p_special_outcome:v.specialOutcome,
+    p_special_picks:v.specialPicks,
   });
   if(error)return {error:error.message};
   revalidatePath("/picks");return {success:true};
