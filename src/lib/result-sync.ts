@@ -52,6 +52,13 @@ export async function syncWeeklyResults(supabase:SupabaseClient,apiKey:string):P
         if(!providerMatch)continue;
         matched+=1;summary.matchedFixtures+=1;
         const state=providerFixtureState(providerMatch);
+        // Providers can briefly regress a completed match to TIMED/IN_PLAY while
+        // refreshing their feed. Never erase an already-final result; a later
+        // final response can still correct the score normally.
+        if(fixture.status==="final"&&state.status!=="final"){
+          summary.finalFixtures+=1;
+          continue;
+        }
         if(state.status==="final")summary.finalFixtures+=1;
         const update:Record<string,unknown>={
           provider_match_id:providerMatch.id,
