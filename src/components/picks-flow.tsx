@@ -7,7 +7,7 @@ import type { Fixture,Outcome } from "@/lib/demo-data";
 import { AppShell } from "@/components/app-shell";
 import { ClubCrest } from "@/components/club-crest";
 import { WeeklyConversations } from "@/components/weekly-conversations";
-import { createChallenge,saveWeeklyComment,saveWeeklyPicks } from "@/app/picks/actions";
+import { createChallenge,saveWeeklyComment,saveWeeklyPicks,saveWeeklySpecialPick } from "@/app/picks/actions";
 import type { WeeklyConversation } from "@/lib/weekly-conversations";
 
 type ExistingPick={fixture_id:string;kind:"gotw"|"own"|"special";selected_outcome:Outcome;stake:number};
@@ -83,6 +83,7 @@ function LivePicks({data}:{data:PicksPageData}){
   const [otherId,setOtherId]=useState(data.existing.own?.fixture_id??others[0]?.id);
   const [otherPick,setOtherPick]=useState<Outcome|undefined>(data.existing.own?.selected_outcome);
   const [specialPicks,setSpecialPicks]=useState<Record<string,Outcome|undefined>>(()=>Object.fromEntries(data.existing.specials.map(p=>[p.fixture_id,p.selected_outcome])));
+  const [specialSaving,setSpecialSaving]=useState<Record<string,boolean>>({});
   const [gotwStake,setGotwStake]=useState(Number(data.existing.gotw?.stake??5));const [otherStake,setOtherStake]=useState(Number(data.existing.own?.stake??5));
   const [message,setMessage]=useState("");
   const [saveStatus,setSaveStatus]=useState<"idle"|"waiting"|"saving"|"saved"|"error">(data.existing.source?"saved":"idle");
@@ -113,7 +114,7 @@ function LivePicks({data}:{data:PicksPageData}){
       void saveWeeklyPicks({
         weekId:data.week.id,gotwFixtureId:gotw.id,gotwOutcome:gotwPick,gotwStake,
         ownFixtureId:other.id,ownOutcome:otherPick,ownStake:otherStake,
-        specialPicks:specials.filter(special=>Boolean(specialPicks[special.id])).map(special=>({fixtureId:special.id,outcome:specialPicks[special.id]!})),
+        specialPicks:specials.filter(special=>!hasFixtureLocked(special)&&Boolean(specialPicks[special.id])).map(special=>({fixtureId:special.id,outcome:specialPicks[special.id]!})),
       }).then(result=>{
         if(result.error){setSaveStatus("error");setSaveError(result.error);return}
         lastSaved.current=signature;setSaveStatus("saved");setSaveError("");
@@ -141,7 +142,7 @@ function LivePicks({data}:{data:PicksPageData}){
           {other&&<FixtureCard fixture={other} selection={otherPick} onSelect={o=>{setMessage("");setOtherPick(o)}} stake={otherStake} setStake={adjustOther} disabled={data.locked}/>}
         </section>
       </div>
-      {specials.map(special=>{const specialStake=specialStakeFor(special);const fixtureLocked=data.locked||hasFixtureLocked(special);return <section className="manager-special" key={special.id}><div className="section-label"><div><p className="eyebrow">{isMarathonSpecial(special)?"Ten points from the bank":"Five points from the bank"}</p><h2>{isMarathonSpecial(special)?"Marathon over/under":isElClasico(special)?"El Clásico bonus bet":isBatesColby(special)?"Maine rivalry bonus bet":"Manager’s Special of the Week"}</h2><p className="subtle">{isMarathonSpecial(special)?"Under 3:55 or Over 3:55. This fixed 10-point bonus is separate from your normal 10; exactly 3:55 is a push.":isElClasico(special)?"Barcelona vs Real Madrid. Pick the result; this mandatory 5-point stake is separate from your normal 10.":isBatesColby(special)?"Both teams arrive at 4–6–4, making this close to a coin flip. Colby has scored 20 goals to Bates’s 11, but has also conceded 21 while Bates has allowed only 12. Both are winless in four and Colby has lost all four. Pick the 90-minute result; this fixed 5-point bet locks at Tuesday’s 3:00 PM ET kickoff.":"Pick the result; the stake is fixed at 5."}</p></div><span className="pill">{fixtureLocked?"Locked":`${specialStake} bonus pts`}</span></div>{!isElClasico(special)&&!isMarathonSpecial(special)&&!isBatesColby(special)&&<DockersDerbyIdentity/>}<FixtureCard fixture={special} selection={specialPicks[special.id]} onSelect={o=>{setMessage("");setSpecialPicks(current=>({...current,[special.id]:o}))}} stake={specialStake} label={isMarathonSpecial(special)?"MARATHON":isElClasico(special)?"EL CLÁSICO":isBatesColby(special)?"BATES–COLBY":"SPECIAL"} disabled={fixtureLocked} fixedStake allowedOutcomes={isMarathonSpecial(special)?["home","away"]:undefined}/></section>})}
+      {specials.map(special=>{const specialStake=specialStakeFor(special);const fixtureLocked=data.locked||hasFixtureLocked(special);return <section className="manager-special" key={special.id}><div className="section-label"><div><p className="eyebrow">{isMarathonSpecial(special)?"Ten points from the bank":"Five points from the bank"}</p><h2>{isMarathonSpecial(special)?"Marathon over/under":isElClasico(special)?"El Clásico bonus bet":isBatesColby(special)?"Maine rivalry bonus bet":"Manager’s Special of the Week"}</h2><p className="subtle">{isMarathonSpecial(special)?"Under 3:55 or Over 3:55. This fixed 10-point bonus is separate from your normal 10; exactly 3:55 is a push.":isElClasico(special)?"Barcelona vs Real Madrid. Pick the result; this mandatory 5-point stake is separate from your normal 10.":isBatesColby(special)?"Both teams arrive at 4–6–4, making this close to a coin flip. Colby has scored 20 goals to Bates’s 11, but has also conceded 21 while Bates has allowed only 12. Both are winless in four and Colby has lost all four. Pick the 90-minute result; this fixed 5-point bet locks at Tuesday’s 3:00 PM ET kickoff.":"Pick the result; the stake is fixed at 5."}</p></div><span className="pill">{fixtureLocked?"Locked":specialSaving[special.id]?"Saving…":`${specialStake} bonus pts`}</span></div>{!isElClasico(special)&&!isMarathonSpecial(special)&&!isBatesColby(special)&&<DockersDerbyIdentity/>}<FixtureCard fixture={special} selection={specialPicks[special.id]} onSelect={o=>{setMessage("");setSpecialPicks(current=>({...current,[special.id]:o}));setSpecialSaving(current=>({...current,[special.id]:true}));void saveWeeklySpecialPick({weekId:data.week.id,fixtureId:special.id,outcome:o}).then(result=>{setSpecialSaving(current=>({...current,[special.id]:false}));if(result.error)setMessage(result.error)})}} stake={specialStake} label={isMarathonSpecial(special)?"MARATHON":isElClasico(special)?"EL CLÁSICO":isBatesColby(special)?"BATES–COLBY":"SPECIAL"} disabled={fixtureLocked||specialSaving[special.id]} fixedStake allowedOutcomes={isMarathonSpecial(special)?["home","away"]:undefined}/></section>})}
       {message&&<div className={message.toLowerCase().includes("error")?"notice":"saved"}><CheckCircle2 size={20}/>{message}</div>}
       <div className={`autosave-bar ${saveStatus}`}>
         {!signature?<><Clock3 size={18}/><div><b>Finish your card</b><span>It will save automatically as soon as every required outcome is selected.</span></div></>

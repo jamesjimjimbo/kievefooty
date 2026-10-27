@@ -18,6 +18,16 @@ export async function saveWeeklyPicks(input:unknown){
   revalidatePath("/picks");return {success:true};
 }
 
+export async function saveWeeklySpecialPick(input:{weekId:string;fixtureId:string;outcome:"home"|"draw"|"away"}){
+  const supabase=await createClient();if(!supabase)return {error:"Supabase is not configured"};
+  const {data:{user}}=await supabase.auth.getUser();if(!user)return {error:"Please sign in again"};
+  const {error}=await supabase.rpc("save_weekly_special_pick",{
+    p_week_id:input.weekId,p_fixture_id:input.fixtureId,p_outcome:input.outcome,
+  });
+  if(error)return {error:error.message};
+  revalidatePath("/picks");return {success:true};
+}
+
 export async function createChallenge(input:{weekId:string;opponentId:string}){
   const supabase=await createClient();if(!supabase)return {error:"Supabase is not configured"};
   const {data:{user}}=await supabase.auth.getUser();if(!user)return {error:"Please sign in again"};
