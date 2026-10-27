@@ -11,13 +11,13 @@ import { createChallenge,saveWeeklyComment,saveWeeklyPicks,saveWeeklySpecialPick
 import type { WeeklyConversation } from "@/lib/weekly-conversations";
 
 type ExistingPick={fixture_id:string;kind:"gotw"|"own"|"special";selected_outcome:Outcome;stake:number};
-type BonusBoardPlayer={userId:string;name:string;crestUrl:string|null;odds:number|null;stake:number};
+type BonusBoardPlayer={userId:string;name:string;crestUrl:string|null;odds:number|null;stake:number;isCorrect:boolean|null};
 export type PicksPageData={
   week:{id:string;number:number;label:string;lockAt:string;lockLabel:string;competition:string;featuredLabel:string;featuredShortLabel:string;oddsLabel?:string};bankroll:number;rank:number;fixtures:Fixture[];
   existing:{gotw?:ExistingPick;own?:ExistingPick;specials:ExistingPick[];source?:string;commentary?:string};opponents:{id:string;display_name:string}[];challengeTokens:number;locked:boolean;
   personalChallenges:{id:string;direction:"incoming"|"outgoing";otherId:string;otherName:string;otherCrestUrl:string|null}[];
   currentUserId:string;conversations:WeeklyConversation[];
-  batesColbyBoard?:{kickoff:string;colby:BonusBoardPlayer[];draw:BonusBoardPlayer[];bates:BonusBoardPlayer[];mentalHealth:BonusBoardPlayer[]};
+  batesColbyBoard?:{kickoff:string;final:boolean;homeScore:number|null;awayScore:number|null;colby:BonusBoardPlayer[];draw:BonusBoardPlayer[];bates:BonusBoardPlayer[];mentalHealth:BonusBoardPlayer[]};
   standings:{
     first:{id:string;name:string;crestUrl:string|null;score:number;featuredStreak:number;me:boolean}[];
     second:{id:string;name:string;crestUrl:string|null;score:number;featuredStreak:number;me:boolean}[];
@@ -229,13 +229,13 @@ function BatesColbyBoard({board}:{board:NonNullable<PicksPageData["batesColbyBoa
     ...board.mentalHealth.map(player=>({...player,selection:"Mental Health"})),
   ].sort((a,b)=>a.name.localeCompare(b.name));
   return <section className="bonus-picks-board">
-    <div className="section-label"><div><p className="eyebrow">Market locked · {board.kickoff}</p><h2>Colby vs Bates: where everyone landed</h2><p className="subtle">Every five-point bet, plus the people who made the emotionally responsible choice.</p></div></div>
+    <div className="section-label"><div><p className="eyebrow">{board.final?"Final":"Market locked"} · {board.kickoff}</p><h2>Colby {board.final?board.homeScore:"vs"} {board.final?"–":""} {board.final?board.awayScore:""} Bates</h2><p className="subtle">Every five-point bet, plus the people who made the emotionally responsible choice.</p></div></div>
     <div className="card bonus-picks-table">
-      <div className="bonus-picks-row bonus-picks-head"><span>Player</span><span>Selection</span><span>Odds</span><span>Stake</span><span>Potential return</span></div>
-      {rows.map(player=>{const mental=player.selection==="Mental Health";const potential=mental?5:player.stake*(player.odds??0);return <div className="bonus-picks-row" key={player.userId}>
+      <div className="bonus-picks-row bonus-picks-head"><span>Player</span><span>Selection</span><span>Odds</span><span>Stake</span><span>{board.final?"Return":"Potential return"}</span></div>
+      {rows.map(player=>{const mental=player.selection==="Mental Health";const potential=mental?5:player.stake*(player.odds??0);const returned=board.final?(player.isCorrect?potential:0):potential;return <div className="bonus-picks-row" key={player.userId}>
         <Link className="bonus-pick-player" href={`/players/${player.userId}`}><ClubCrest seed={player.userId} label={player.name} imageUrl={player.crestUrl} size="sm"/><b>{player.name}</b></Link>
         <strong className={mental?"mental-health-pick":""}>{player.selection}</strong>
-        <span>{mental?"—":player.odds?.toFixed(2)}</span><span>{player.stake} pts</span><b>{potential.toFixed(2)} pts</b>
+        <span>{mental?"—":player.odds?.toFixed(2)}</span><span>{player.stake} pts</span><b>{returned.toFixed(2)} pts</b>
       </div>})}
     </div>
   </section>;

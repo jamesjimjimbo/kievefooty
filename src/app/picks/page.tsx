@@ -83,7 +83,7 @@ export default async function PicksPage(){
   const batesColbyLocked=Boolean(batesColbyFixture?.kickoffAt&&Date.now()>=Date.parse(batesColbyFixture.kickoffAt));
   const batesColbyPicks=batesColbyFixture?leagueRows.flatMap(row=>row.picks.filter(pick=>pick.fixture_id===batesColbyFixture.id).map(pick=>({
     userId:row.user_id,name:row.profiles?.display_name??"Player",crestUrl:row.profiles?.crest_url??null,outcome:pick.selected_outcome,
-    odds:Number(pick.odds),stake:Number(pick.stake),
+    odds:Number(pick.odds),stake:Number(pick.stake),isCorrect:pick.is_correct,
   }))):[];
   const batesColbyBackers=new Set(batesColbyPicks.map(pick=>pick.userId));
   const existing=(submission?.picks??[]) as {fixture_id:string;kind:"gotw"|"own"|"special";selected_outcome:Outcome;stake:number}[];
@@ -119,10 +119,12 @@ export default async function PicksPage(){
     currentUserId:user.id,conversations:conversationRows,
     batesColbyBoard:batesColbyFixture&&batesColbyLocked?{
       kickoff:batesColbyFixture.kickoff,
+      final:["final","finished"].includes(batesColbyFixture.status?.toLowerCase()??""),
+      homeScore:batesColbyFixture.homeScore??null,awayScore:batesColbyFixture.awayScore??null,
       colby:batesColbyPicks.filter(pick=>pick.outcome==="home"),
       draw:batesColbyPicks.filter(pick=>pick.outcome==="draw"),
       bates:batesColbyPicks.filter(pick=>pick.outcome==="away"),
-      mentalHealth:profileRows.filter(profile=>!batesColbyBackers.has(profile.id)).map(profile=>({userId:profile.id,name:profile.display_name,crestUrl:profile.crest_url,odds:null,stake:5})),
+      mentalHealth:profileRows.filter(profile=>!batesColbyBackers.has(profile.id)).map(profile=>({userId:profile.id,name:profile.display_name,crestUrl:profile.crest_url,odds:null,stake:5,isCorrect:true})),
     }:undefined,
     opponents:opponentRows.filter(p=>!used.has(p.id)),challengeTokens:Math.max(0,opponentRows.length-used.size),
     personalChallenges:mappedWeekChallenges.filter(challenge=>challenge.challengerId===user.id||challenge.opponentId===user.id).map(challenge=>({
