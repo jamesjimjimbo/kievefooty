@@ -410,18 +410,17 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .personal-challenge-card.incoming > svg { color: #ffe1a6; }
 .locked-picks { margin-top: 25px; }
 .bonus-picks-board { margin-top: 28px; }
-.bonus-picks-columns { display: grid; gap: 12px; grid-template-columns: repeat(2,minmax(0,1fr)); }
-.bonus-picks-column { overflow: hidden; padding: 0; }
-.bonus-picks-column header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--line); background: var(--lavender); }
-.bonus-picks-column header div { display: grid; gap: 2px; }
-.bonus-picks-column header b { font-size: 14px; }
-.bonus-picks-column header small { color: var(--muted); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
-.bonus-picks-column header > span { min-width: 28px; padding: 5px 8px; border-radius: 999px; color: white; background: var(--primary); text-align: center; font-size: 11px; font-weight: 900; }
-.bonus-picks-column > div { padding: 8px 14px 12px; }
-.bonus-pick-player { display: flex; align-items: center; gap: 9px; padding: 8px 0; border-bottom: 1px solid var(--line); color: var(--ink); }
-.bonus-pick-player:last-child { border-bottom: 0; }
+.bonus-picks-table { overflow: hidden; padding: 0; }
+.bonus-picks-row { display: grid; grid-template-columns: minmax(150px,1.4fr) minmax(110px,1fr) 70px 70px 110px; align-items: center; gap: 12px; min-height: 54px; padding: 8px 16px; border-bottom: 1px solid var(--line); font-size: 11px; }
+.bonus-picks-row:last-child { border-bottom: 0; }
+.bonus-picks-head { min-height: 40px; color: var(--muted); background: var(--lavender); font-size: 9px; font-weight: 900; text-transform: uppercase; letter-spacing: .08em; }
+.bonus-pick-player { display: flex; align-items: center; gap: 9px; min-width: 0; color: var(--ink); }
 .bonus-pick-player b { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
-@media (max-width: 640px) { .bonus-picks-columns { grid-template-columns: 1fr; } }
+.mental-health-pick { color: #087f72; }
+@media (max-width: 640px) {
+  .bonus-picks-table { overflow-x: auto; }
+  .bonus-picks-row { min-width: 650px; }
+}
 .league-pick-grid { display: grid; gap: 12px; }
 .league-pick-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
 .revealed-pick { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); }
