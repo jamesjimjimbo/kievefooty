@@ -16,6 +16,8 @@ export async function syncWeeklyResults(supabase:SupabaseClient,apiKey:string):P
   const {data:run,error:runError}=await supabase.from("result_sync_runs").insert({status:"running"}).select("id").single();
   if(runError)throw new Error(`Could not start result sync: ${runError.message}`);
   try{
+    const {error:abstentionError}=await supabase.rpc("award_bates_colby_abstention_credits");
+    if(abstentionError)throw new Error(`Could not award locked bonus abstention credits: ${abstentionError.message}`);
     const revisitFrom=new Date();
     revisitFrom.setUTCDate(revisitFrom.getUTCDate()-14);
     const {data,error}=await supabase
