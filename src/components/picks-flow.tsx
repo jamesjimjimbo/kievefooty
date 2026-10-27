@@ -11,11 +11,13 @@ import { createChallenge,saveWeeklyComment,saveWeeklyPicks,saveWeeklySpecialPick
 import type { WeeklyConversation } from "@/lib/weekly-conversations";
 
 type ExistingPick={fixture_id:string;kind:"gotw"|"own"|"special";selected_outcome:Outcome;stake:number};
+type BonusBoardPlayer={userId:string;name:string;crestUrl:string|null};
 export type PicksPageData={
   week:{id:string;number:number;label:string;lockAt:string;lockLabel:string;competition:string;featuredLabel:string;featuredShortLabel:string;oddsLabel?:string};bankroll:number;rank:number;fixtures:Fixture[];
   existing:{gotw?:ExistingPick;own?:ExistingPick;specials:ExistingPick[];source?:string;commentary?:string};opponents:{id:string;display_name:string}[];challengeTokens:number;locked:boolean;
   personalChallenges:{id:string;direction:"incoming"|"outgoing";otherId:string;otherName:string;otherCrestUrl:string|null}[];
   currentUserId:string;conversations:WeeklyConversation[];
+  batesColbyBoard?:{kickoff:string;colby:BonusBoardPlayer[];draw:BonusBoardPlayer[];bates:BonusBoardPlayer[];mentalHealth:BonusBoardPlayer[]};
   standings:{
     first:{id:string;name:string;crestUrl:string|null;score:number;featuredStreak:number;me:boolean}[];
     second:{id:string;name:string;crestUrl:string|null;score:number;featuredStreak:number;me:boolean}[];
@@ -150,6 +152,7 @@ function LivePicks({data}:{data:PicksPageData}){
         :saveStatus==="saving"||saveStatus==="waiting"?<><LoaderCircle className="spin" size={18}/><div><b>{saveStatus==="waiting"?"Changes queued":"Saving changes"}</b><span>You can keep editing.</span></div></>
         :<><CheckCircle2 size={18}/><div><b>All changes saved</b><span>No Save button needed.</span></div></>}
       </div></>}
+      {data.batesColbyBoard&&<BatesColbyBoard board={data.batesColbyBoard}/>} 
       {!data.locked&&<section className="card weekly-comment-editor"><div className="weekly-comment-head"><div><p className="eyebrow"><MessageCircle size={14}/> Optional</p><h2>Explain your picks—or talk some shit</h2></div><span className="pill"><LockKeyhole size={13}/> Hidden until lock</span></div><textarea value={comment} onChange={event=>{setComment(event.target.value);setCommentMessage("")}} maxLength={180} rows={3} placeholder="180 characters. Confidence encouraged; evidence optional."/><div className="comment-editor-foot"><span className="character-count">{comment.length}/180</span><button type="button" className="secondary" onClick={saveComment} disabled={commentPending||saveStatus!=="saved"}>{commentPending?"Saving…":"Save statement"}</button></div>{saveStatus!=="saved"&&<p className="microcopy">Finish your two picks first, then add your statement.</p>}{commentMessage&&<p className={commentMessage.toLowerCase().includes("saved")||commentMessage.toLowerCase().includes("removed")?"form-success":"form-error"}>{commentMessage}</p>}</section>}
       {!data.locked&&<section className="weekly-challenge"><div className="section-label"><div><p className="eyebrow">Head to head</p><h2>Challenge a mate</h2></div><span className="pill">{data.challengeTokens} left</span></div>
         {data.personalChallenges.length>0&&<div className="personal-challenge-list">{data.personalChallenges.map(item=><Link className={`personal-challenge-card ${item.direction}`} href={`/players/${item.otherId}`} key={item.id}><ClubCrest seed={item.otherId} label={item.otherName} imageUrl={item.otherCrestUrl} size="md"/><div><span>{item.direction==="incoming"?"You’ve been challenged":"Challenge sent"}</span><b>{item.direction==="incoming"?`${item.otherName} wants your 10 points`:`You’re facing ${item.otherName}`}</b><small>Your full weekly card decides it. No acceptance needed.</small></div><Swords size={22}/></Link>)}</div>}
@@ -215,6 +218,22 @@ function StandingsSnapshot({rows}:{rows:PicksPageData["standings"]}){
     {tab==="overall"&&<label className="projection-toggle"><input type="checkbox" checked={project} onChange={event=>setProject(event.target.checked)}/><span/><b>Include season bets</b></label>}</div>
     {tab==="overall"&&project&&<p className="projection-note">Assumes today&apos;s league and market results are final.</p>}
     <div className="card table compact-table">{sorted.map((row,index)=><div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><Link className="player player-link" href={`/players/${row.id}`}><ClubCrest seed={row.id} label={row.name} imageUrl={row.crestUrl} size="sm"/><span>{row.name}{row.featuredStreak>=2&&<i className="streak-alert" title={row.featuredStreak>=3?`${row.featuredStreak} straight — another win earns +10`:"Two straight — the next featured-game win earns +10"} aria-label="Featured-game streak bonus on the line">🔥</i>}{row.me&&<small className="you-label">You</small>}</span></Link><span className="points">{row.score}</span></div>)}</div>
+  </section>;
+}
+
+function BatesColbyBoard({board}:{board:NonNullable<PicksPageData["batesColbyBoard"]>}){
+  const columns:[string,string,BonusBoardPlayer[]][]=[
+    ["Colby","Mules",board.colby],
+    ["Draw","Neither blinked",board.draw],
+    ["Bates","Bobcats",board.bates],
+    ["Mental Health","Took the five",board.mentalHealth],
+  ];
+  return <section className="bonus-picks-board">
+    <div className="section-label"><div><p className="eyebrow">Market locked · {board.kickoff}</p><h2>Colby vs Bates: where everyone landed</h2><p className="subtle">Every five-point bet, plus the people who made the emotionally responsible choice.</p></div></div>
+    <div className="bonus-picks-columns">{columns.map(([title,subtitle,players])=><article className="card bonus-picks-column" key={title}>
+      <header><div><b>{title}</b><small>{subtitle}</small></div><span>{players.length}</span></header>
+      <div>{players.length?players.map(player=><Link className="bonus-pick-player" href={`/players/${player.userId}`} key={player.userId}><ClubCrest seed={player.userId} label={player.name} imageUrl={player.crestUrl} size="sm"/><b>{player.name}</b></Link>):<p className="no-backs">No takers</p>}</div>
+    </article>)}</div>
   </section>;
 }
 

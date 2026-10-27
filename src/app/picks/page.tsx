@@ -50,9 +50,7 @@ export default async function PicksPage(){
     supabase.rpc("get_standings",{p_half:"second"}),
     supabase.rpc("get_standings",{p_half:null}),
     supabase.rpc("get_projected_standings"),
-    locked
-      ? supabase.from("weekly_submissions").select("id,user_id,source,commentary,profiles(display_name,crest_url),picks(fixture_id,kind,selected_outcome,stake,odds,is_correct)").eq("competition_week_id",week.id)
-      : Promise.resolve({data:[]}),
+    supabase.from("weekly_submissions").select("id,user_id,source,commentary,profiles(display_name,crest_url),picks(fixture_id,kind,selected_outcome,stake,odds,is_correct)").eq("competition_week_id",week.id),
     previousWeek
       ? supabase.from("weekly_submissions").select("user_id,profiles(display_name,crest_url),picks(stake,odds,is_correct)").eq("competition_week_id",previousWeek.id)
       : Promise.resolve({data:[]}),
@@ -81,6 +79,12 @@ export default async function PicksPage(){
     const latest=[...(row.fixture_odds??[])].sort((a,b)=>Date.parse(b.captured_at)-Date.parse(a.captured_at))[0];
     return {id:row.id,home:row.home?.name??"Home",away:row.away?.name??"Away",kickoff:new Intl.DateTimeFormat("en-US",{weekday:"short",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(row.kickoff_at)),kickoffAt:row.kickoff_at,gotw:row.is_gotw,special:row.is_manager_special,status:row.status,homeScore:row.home_score,awayScore:row.away_score,odds:{home:oddsMultiplier*Number(latest?.home??1),draw:oddsMultiplier*Number(latest?.draw??1),away:oddsMultiplier*Number(latest?.away??1)}};
   });
+  const batesColbyFixture=fixtures.find(fixture=>fixture.home==="Colby"&&fixture.away==="Bates");
+  const batesColbyLocked=Boolean(batesColbyFixture?.kickoffAt&&Date.now()>=Date.parse(batesColbyFixture.kickoffAt));
+  const batesColbyPicks=batesColbyFixture?leagueRows.flatMap(row=>row.picks.filter(pick=>pick.fixture_id===batesColbyFixture.id).map(pick=>({
+    userId:row.user_id,name:row.profiles?.display_name??"Player",crestUrl:row.profiles?.crest_url??null,outcome:pick.selected_outcome,
+  }))):[];
+  const batesColbyBackers=new Set(batesColbyPicks.map(pick=>pick.userId));
   const existing=(submission?.picks??[]) as {fixture_id:string;kind:"gotw"|"own"|"special";selected_outcome:Outcome;stake:number}[];
   const standingRows=(overallStandings??[]) as StandingRow[];
   const rank=Math.max(1,standingRows.findIndex(row=>row.user_id===user.id)+1);
@@ -112,6 +116,13 @@ export default async function PicksPage(){
     bankroll:(ledger??[]).reduce((sum,row)=>sum+Number(row.amount),0),rank,fixtures,
     existing:{gotw:existing.find(p=>p.kind==="gotw"),own:existing.find(p=>p.kind==="own"),specials:existing.filter(p=>p.kind==="special"),source:submission?.source,commentary:submission?.commentary??""},
     currentUserId:user.id,conversations:conversationRows,
+    batesColbyBoard:batesColbyFixture&&batesColbyLocked?{
+      kickoff:batesColbyFixture.kickoff,
+      colby:batesColbyPicks.filter(pick=>pick.outcome==="home"),
+      draw:batesColbyPicks.filter(pick=>pick.outcome==="draw"),
+      bates:batesColbyPicks.filter(pick=>pick.outcome==="away"),
+      mentalHealth:profileRows.filter(profile=>!batesColbyBackers.has(profile.id)).map(profile=>({userId:profile.id,name:profile.display_name,crestUrl:profile.crest_url})),
+    }:undefined,
     opponents:opponentRows.filter(p=>!used.has(p.id)),challengeTokens:Math.max(0,opponentRows.length-used.size),
     personalChallenges:mappedWeekChallenges.filter(challenge=>challenge.challengerId===user.id||challenge.opponentId===user.id).map(challenge=>({
       id:challenge.id,direction:challenge.opponentId===user.id?"incoming" as const:"outgoing" as const,
@@ -128,7 +139,7 @@ export default async function PicksPage(){
     },
     leaguePicks:leagueRows.map(row=>({
       userId:row.user_id,name:row.profiles?.display_name??"Player",crestUrl:row.profiles?.crest_url??null,source:row.source,
-      picks:row.picks.map(p=>({
+      picks:row.picks.filter(p=>locked||Boolean(fixtures.find(fixture=>fixture.id===p.fixture_id&&fixture.special&&fixture.kickoffAt&&Date.now()>=Date.parse(fixture.kickoffAt)))).map(p=>({
         fixtureId:p.fixture_id,fixture:fixtureNames.get(p.fixture_id)??"Fixture",kind:p.kind,
         outcome:p.selected_outcome,stake:Number(p.stake),odds:Number(p.odds),isCorrect:p.is_correct,
       })),
