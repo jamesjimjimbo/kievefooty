@@ -330,9 +330,10 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .recap-player strong { color: #71e2d7; font-size: 20px; }
 .recap-player > span:last-child { color: #f5b5bd; font-size: 10px; }
 .recap-divider { height: 1px; background: rgba(255, 255, 255, .12); }
-.home-league-table .standing-row { grid-template-columns: 26px minmax(0,1fr) 48px 55px; }
+.compact-table.home-league-table .standing-row { grid-template-columns: 27px minmax(0,1fr) 48px 62px; }
 .home-league-table .standing-head { min-height: 26px; padding-top: 4px; padding-bottom: 4px; color: var(--muted); font-size: 8px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .home-league-table .last-week-points { color: var(--primary); font-size: 11px; font-weight: 850; text-align: right; }
+.home-league-table .points { text-align: right; }
 .picks-layout { display: grid; gap: 20px; }
 .pick-choice-grid { display: grid; gap: 10px; }
 .pick-choice { min-width: 0; }

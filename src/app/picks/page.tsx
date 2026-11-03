@@ -26,7 +26,7 @@ type PreviousSubmissionRow={
   user_id:string;profiles:{display_name:string;crest_url:string|null}|null;
   picks:{stake:number|string;odds:number|string;is_correct:boolean|null}[];
 };
-type PreviousLedgerRow={user_id:string;amount:number|string};
+type PreviousWeekScoreRow={user_id:string;weekly_score:number|string};
 function hasWeekLocked(lockAt:string){return new Date().getTime()>=Date.parse(lockAt)}
 
 export default async function PicksPage(){
@@ -56,7 +56,7 @@ export default async function PicksPage(){
       ? supabase.from("weekly_submissions").select("user_id,profiles(display_name,crest_url),picks(stake,odds,is_correct)").eq("competition_week_id",previousWeek.id)
       : Promise.resolve({data:[]}),
     previousWeek
-      ? supabase.from("points_ledger").select("user_id,amount").eq("competition_week_id",previousWeek.id)
+      ? supabase.rpc("get_weekly_scores",{p_week_id:previousWeek.id})
       : Promise.resolve({data:[]}),
     supabase.from("challenges").select("id,challenger_id,opponent_id,challenger_weekly_net,opponent_weekly_net,challenger:profiles!challenges_challenger_id_fkey(display_name,crest_url),opponent:profiles!challenges_opponent_id_fkey(display_name,crest_url)").eq("competition_week_id",week.id),
     supabase.from("weekly_submissions").select("user_id,week:competition_weeks(number,start_date),picks(kind,is_correct)"),
@@ -109,10 +109,7 @@ export default async function PicksPage(){
       },0)*100)/100,
     }))
     .sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
-  const lastWeekByPlayer=new Map<string,number>();
-  for(const entry of (previousLedger??[]) as PreviousLedgerRow[]){
-    lastWeekByPlayer.set(entry.user_id,(lastWeekByPlayer.get(entry.user_id)??0)+Number(entry.amount));
-  }
+  const lastWeekByPlayer=new Map(((previousLedger??[]) as PreviousWeekScoreRow[]).map(entry=>[entry.user_id,Number(entry.weekly_score)]));
   const standingPlayer=(row:StandingRow)=>({id:row.user_id,name:row.display_name,crestUrl:crestMap.get(row.user_id)??null,score:Number(row.score),lastWeek:Math.round((lastWeekByPlayer.get(row.user_id)??0)*100)/100,featuredStreak:featuredStreaks.get(row.user_id)??0,me:row.user_id===user.id});
   const mappedWeekChallenges=((weekChallenges??[]) as unknown as WeekChallengeRow[]).map(challenge=>({
     id:challenge.id,challengerId:challenge.challenger_id,opponentId:challenge.opponent_id,
