@@ -26,6 +26,7 @@ type PreviousSubmissionRow={
   user_id:string;profiles:{display_name:string;crest_url:string|null}|null;
   picks:{stake:number|string;odds:number|string;is_correct:boolean|null}[];
 };
+type PreviousLedgerRow={user_id:string;amount:number|string};
 function hasWeekLocked(lockAt:string){return new Date().getTime()>=Date.parse(lockAt)}
 
 export default async function PicksPage(){
@@ -39,7 +40,7 @@ export default async function PicksPage(){
   if(!week)return <PicksFlow data={null}/>;
   const locked=week.status!=="open"||hasWeekLocked(week.lock_at);
   const {data:previousWeek}=await supabase.from("competition_weeks").select("id,label").eq("status","settled").eq("is_active_betting_week",true).lt("start_date",week.start_date).order("start_date",{ascending:false}).limit(1).maybeSingle();
-  const [{data:rows},{data:submission},{data:ledger},{data:profiles},{data:challenges},{data:firstStandings},{data:secondStandings},{data:overallStandings},{data:projectedStandings},{data:leagueSubmissions},{data:previousSubmissions},{data:weekChallenges},{data:streakData}]=await Promise.all([
+  const [{data:rows},{data:submission},{data:ledger},{data:profiles},{data:challenges},{data:firstStandings},{data:secondStandings},{data:overallStandings},{data:projectedStandings},{data:leagueSubmissions},{data:previousSubmissions},{data:previousLedger},{data:weekChallenges},{data:streakData}]=await Promise.all([
     supabase.from("fixtures").select("id,kickoff_at,is_gotw,is_manager_special,status,home_score,away_score,home:teams!fixtures_home_team_id_fkey(name),away:teams!fixtures_away_team_id_fkey(name),fixture_odds(home,draw,away,captured_at)").eq("competition_week_id",week.id).eq("is_eligible",true).order("kickoff_at"),
     supabase.from("weekly_submissions").select("source,commentary,picks(fixture_id,kind,selected_outcome,stake)").eq("user_id",user.id).eq("competition_week_id",week.id).maybeSingle(),
     supabase.from("points_ledger").select("amount").eq("user_id",user.id),
@@ -53,6 +54,9 @@ export default async function PicksPage(){
     supabase.from("weekly_submissions").select("id,user_id,source,commentary,profiles(display_name,crest_url),picks(fixture_id,kind,selected_outcome,stake,odds,is_correct)").eq("competition_week_id",week.id),
     previousWeek
       ? supabase.from("weekly_submissions").select("user_id,profiles(display_name,crest_url),picks(stake,odds,is_correct)").eq("competition_week_id",previousWeek.id)
+      : Promise.resolve({data:[]}),
+    previousWeek
+      ? supabase.from("points_ledger").select("user_id,amount").eq("competition_week_id",previousWeek.id)
       : Promise.resolve({data:[]}),
     supabase.from("challenges").select("id,challenger_id,opponent_id,challenger_weekly_net,opponent_weekly_net,challenger:profiles!challenges_challenger_id_fkey(display_name,crest_url),opponent:profiles!challenges_opponent_id_fkey(display_name,crest_url)").eq("competition_week_id",week.id),
     supabase.from("weekly_submissions").select("user_id,week:competition_weeks(number,start_date),picks(kind,is_correct)"),
@@ -105,6 +109,11 @@ export default async function PicksPage(){
       },0)*100)/100,
     }))
     .sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
+  const lastWeekByPlayer=new Map<string,number>();
+  for(const entry of (previousLedger??[]) as PreviousLedgerRow[]){
+    lastWeekByPlayer.set(entry.user_id,(lastWeekByPlayer.get(entry.user_id)??0)+Number(entry.amount));
+  }
+  const standingPlayer=(row:StandingRow)=>({id:row.user_id,name:row.display_name,crestUrl:crestMap.get(row.user_id)??null,score:Number(row.score),lastWeek:Math.round((lastWeekByPlayer.get(row.user_id)??0)*100)/100,featuredStreak:featuredStreaks.get(row.user_id)??0,me:row.user_id===user.id});
   const mappedWeekChallenges=((weekChallenges??[]) as unknown as WeekChallengeRow[]).map(challenge=>({
     id:challenge.id,challengerId:challenge.challenger_id,opponentId:challenge.opponent_id,
     challenger:challenge.challenger?.display_name??"Player",challengerCrestUrl:challenge.challenger?.crest_url??null,
@@ -135,10 +144,10 @@ export default async function PicksPage(){
     })),
     locked,
     standings:{
-      first:((firstStandings??[]) as StandingRow[]).map(row=>({id:row.user_id,name:row.display_name,crestUrl:crestMap.get(row.user_id)??null,score:Number(row.score),featuredStreak:featuredStreaks.get(row.user_id)??0,me:row.user_id===user.id})),
-      second:((secondStandings??[]) as StandingRow[]).map(row=>({id:row.user_id,name:row.display_name,crestUrl:crestMap.get(row.user_id)??null,score:Number(row.score),featuredStreak:featuredStreaks.get(row.user_id)??0,me:row.user_id===user.id})),
-      overall:standingRows.map(row=>({id:row.user_id,name:row.display_name,crestUrl:crestMap.get(row.user_id)??null,score:Number(row.score),featuredStreak:featuredStreaks.get(row.user_id)??0,me:row.user_id===user.id})),
-      projected:((projectedStandings??overallStandings??[]) as ProjectedStandingRow[]).map(row=>({id:row.user_id,name:row.display_name,crestUrl:crestMap.get(row.user_id)??null,score:Number(row.score),featuredStreak:featuredStreaks.get(row.user_id)??0,me:row.user_id===user.id,seasonProjection:Number(row.season_projection??0)})),
+      first:((firstStandings??[]) as StandingRow[]).map(standingPlayer),
+      second:((secondStandings??[]) as StandingRow[]).map(standingPlayer),
+      overall:standingRows.map(standingPlayer),
+      projected:((projectedStandings??overallStandings??[]) as ProjectedStandingRow[]).map(row=>({...standingPlayer(row),seasonProjection:Number(row.season_projection??0)})),
     },
     leaguePicks:leagueRows.map(row=>({
       userId:row.user_id,name:row.profiles?.display_name??"Player",crestUrl:row.profiles?.crest_url??null,source:row.source,
