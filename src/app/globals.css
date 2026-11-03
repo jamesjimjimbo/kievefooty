@@ -333,6 +333,8 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .compact-table.home-league-table .standing-row { grid-template-columns: 27px minmax(0,1fr) 48px 62px; }
 .home-league-table .standing-head { min-height: 26px; padding-top: 4px; padding-bottom: 4px; color: var(--muted); font-size: 8px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
 .home-league-table .last-week-points { color: var(--primary); font-size: 11px; font-weight: 850; text-align: right; }
+.home-league-table a.last-week-points { text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--primary) 35%, transparent); text-underline-offset: 3px; }
+.home-league-table a.last-week-points:hover { color: var(--violet); text-decoration-color: currentColor; }
 .home-league-table .points { text-align: right; }
 .picks-layout { display: grid; gap: 20px; }
 .pick-choice-grid { display: grid; gap: 10px; }

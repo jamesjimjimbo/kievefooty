@@ -26,7 +26,7 @@ export type PicksPageData={
   };
   leaguePicks:{userId:string;name:string;crestUrl:string|null;source:"manual"|"auto";picks:{fixtureId:string;fixture:string;kind:"gotw"|"own"|"special";outcome:Outcome;stake:number;odds:number;isCorrect:boolean|null}[]}[];
   weekChallenges:{id:string;challengerId:string;opponentId:string;challenger:string;challengerCrestUrl:string|null;opponent:string;opponentCrestUrl:string|null;challengerNet:number|null;opponentNet:number|null}[];
-  previousWeek?:{label:string;winner:{id:string;name:string;crestUrl:string|null;score:number};loser:{id:string;name:string;crestUrl:string|null;score:number}};
+  previousWeek?:{number:number;label:string;winner:{id:string;name:string;crestUrl:string|null;score:number};loser:{id:string;name:string;crestUrl:string|null;score:number}};
 };
 
 function FixtureCard({fixture,selection,onSelect,stake,setStake,label,disabled,fixedStake=false,allowedOutcomes=["home","draw","away"]}:{fixture:Fixture;selection?:Outcome;onSelect:(o:Outcome)=>void;stake:number;setStake?:(n:number)=>void;label?:string;disabled?:boolean;fixedStake?:boolean;allowedOutcomes?:Outcome[]}) {
@@ -161,7 +161,7 @@ function LivePicks({data}:{data:PicksPageData}){
       {data.locked&&<section className="locked-conversations"><div className="section-label"><div><p className="eyebrow">Embargo lifted</p><h2>Pre-match statements</h2><p className="subtle">React or reply now that everyone&apos;s picks are locked.</p></div></div><WeeklyConversations threads={data.conversations} currentUserId={data.currentUserId} compact/></section>}
       {data.locked&&<LockedLeaguePicks entries={data.leaguePicks} fixtures={data.fixtures} challenges={data.weekChallenges}/>}
     </div><aside className="picks-sidebar">
-      <StandingsSnapshot rows={data.standings}/>
+      <StandingsSnapshot rows={data.standings} previousWeekNumber={data.previousWeek?.number}/>
     </aside></div>
   </main></AppShell>;
 }
@@ -208,7 +208,7 @@ function LockedPickReceipt({gotw,gotwPick,gotwStake,other,otherPick,otherStake,s
   </section>;
 }
 
-function StandingsSnapshot({rows}:{rows:PicksPageData["standings"]}){
+function StandingsSnapshot({rows,previousWeekNumber}:{rows:PicksPageData["standings"];previousWeekNumber?:number}){
   const [tab,setTab]=useState<"first"|"second"|"overall">("overall");
   const [project,setProject]=useState(false);
   const selected=tab==="overall"&&project?rows.projected:rows[tab];
@@ -217,7 +217,7 @@ function StandingsSnapshot({rows}:{rows:PicksPageData["standings"]}){
     <div className="home-standing-controls"><div className="mini-segments" aria-label="Standings period">{([["first","First"],["second","Second"],["overall","Full"]] as const).map(([value,label])=><button type="button" key={value} onClick={()=>{setTab(value);if(value!=="overall")setProject(false)}} className={tab===value?"active":""}>{label}</button>)}</div>
     {tab==="overall"&&<label className="projection-toggle"><input type="checkbox" checked={project} onChange={event=>setProject(event.target.checked)}/><span/><b>Include season bets</b></label>}</div>
     {tab==="overall"&&project&&<p className="projection-note">Assumes today&apos;s league and market results are final.</p>}
-    <div className="card table compact-table home-league-table"><div className="standing-row standing-head" aria-hidden="true"><span/><span/><span>LW</span><span>Total</span></div>{sorted.map((row,index)=><div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><Link className="player player-link" href={`/players/${row.id}`}><ClubCrest seed={row.id} label={row.name} imageUrl={row.crestUrl} size="sm"/><span>{row.name}{row.featuredStreak>=2&&<i className="streak-alert" title={row.featuredStreak>=3?`${row.featuredStreak} straight — another win earns +10`:"Two straight — the next featured-game win earns +10"} aria-label="Featured-game streak bonus on the line">🔥</i>}{row.me&&<small className="you-label">You</small>}</span></Link><span className="last-week-points">{formatWeeklyPoints(row.lastWeek)}</span><span className="points">{row.score}</span></div>)}</div>
+    <div className="card table compact-table home-league-table"><div className="standing-row standing-head" aria-hidden="true"><span/><span/><span>LW</span><span>Total</span></div>{sorted.map((row,index)=><div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><Link className="player player-link" href={`/players/${row.id}`}><ClubCrest seed={row.id} label={row.name} imageUrl={row.crestUrl} size="sm"/><span>{row.name}{row.featuredStreak>=2&&<i className="streak-alert" title={row.featuredStreak>=3?`${row.featuredStreak} straight — another win earns +10`:"Two straight — the next featured-game win earns +10"} aria-label="Featured-game streak bonus on the line">🔥</i>}{row.me&&<small className="you-label">You</small>}</span></Link>{previousWeekNumber?<Link className="last-week-points" href={`/players/${row.id}?week=${previousWeekNumber}#week-${previousWeekNumber}`} title={`See Week ${previousWeekNumber} score breakdown`}>{formatWeeklyPoints(row.lastWeek)}</Link>:<span className="last-week-points">{formatWeeklyPoints(row.lastWeek)}</span>}<span className="points">{row.score}</span></div>)}</div>
   </section>;
 }
 

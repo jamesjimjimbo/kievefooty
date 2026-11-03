@@ -39,7 +39,7 @@ export default async function PicksPage(){
   const week=activeWeek??latestSettled;
   if(!week)return <PicksFlow data={null}/>;
   const locked=week.status!=="open"||hasWeekLocked(week.lock_at);
-  const {data:previousWeek}=await supabase.from("competition_weeks").select("id,label").eq("status","settled").lt("start_date",week.start_date).order("start_date",{ascending:false}).limit(1).maybeSingle();
+  const {data:previousWeek}=await supabase.from("competition_weeks").select("id,number,label").eq("status","settled").lt("start_date",week.start_date).order("start_date",{ascending:false}).limit(1).maybeSingle();
   const [{data:rows},{data:submission},{data:ledger},{data:profiles},{data:challenges},{data:firstStandings},{data:secondStandings},{data:overallStandings},{data:projectedStandings},{data:leagueSubmissions},{data:previousSubmissions},{data:previousLedger},{data:weekChallenges},{data:streakData}]=await Promise.all([
     supabase.from("fixtures").select("id,kickoff_at,is_gotw,is_manager_special,status,home_score,away_score,home:teams!fixtures_home_team_id_fkey(name),away:teams!fixtures_away_team_id_fkey(name),fixture_odds(home,draw,away,captured_at)").eq("competition_week_id",week.id).eq("is_eligible",true).order("kickoff_at"),
     supabase.from("weekly_submissions").select("source,commentary,picks(fixture_id,kind,selected_outcome,stake)").eq("user_id",user.id).eq("competition_week_id",week.id).maybeSingle(),
@@ -155,7 +155,7 @@ export default async function PicksPage(){
     })),
     weekChallenges:mappedWeekChallenges,
     previousWeek:previousWeek&&previousResults.length>1?{
-      label:previousWeek.label,
+      number:previousWeek.number,label:previousWeek.label,
       winner:previousResults[0],
       loser:previousResults[previousResults.length-1],
     }:undefined,
