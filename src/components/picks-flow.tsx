@@ -130,7 +130,6 @@ function LivePicks({data}:{data:PicksPageData}){
   },[data.opponents,opponent]);
   return <AppShell><main className="content content-wide picks-page">
     <div className="picks-topline"><div><span>{data.week.competition} · Week {data.week.number}</span><b>{data.week.label}</b></div><span className={`pill ${data.locked?"":"live"}`}><Clock3 size={13}/>{data.locked?"Locked":`Locks ${data.week.lockLabel}`}</span></div>
-    <SubmissionStatus status={data.submissionStatus} locked={data.locked}/>
     {data.previousWeek&&<WeeklyRecap recap={data.previousWeek}/>}
     {data.locked&&<ThisWeekStandings entries={data.leaguePicks} challenges={data.weekChallenges} week={data.week} currentUserId={data.currentUserId}/>}
     <div className="picks-layout"><div>
@@ -163,22 +162,9 @@ function LivePicks({data}:{data:PicksPageData}){
       {data.locked&&<section className="locked-conversations"><div className="section-label"><div><p className="eyebrow">Embargo lifted</p><h2>Pre-match statements</h2><p className="subtle">React or reply now that everyone&apos;s picks are locked.</p></div></div><WeeklyConversations threads={data.conversations} currentUserId={data.currentUserId} compact/></section>}
       {data.locked&&<LockedLeaguePicks entries={data.leaguePicks} fixtures={data.fixtures} challenges={data.weekChallenges}/>}
     </div><aside className="picks-sidebar">
-      <StandingsSnapshot rows={data.standings} previousWeekNumber={data.previousWeek?.number}/>
+      <StandingsSnapshot rows={data.standings} previousWeekNumber={data.previousWeek?.number} submissionStatus={data.submissionStatus}/>
     </aside></div>
   </main></AppShell>;
-}
-
-function SubmissionStatus({status,locked}:{status:PicksPageData["submissionStatus"];locked:boolean}){
-  const total=status.submitted.length+status.outstanding.length;
-  const automatic=status.submitted.filter(player=>player.source==="auto").length;
-  return <section className="card submission-status" aria-label="Weekly pick submission status">
-    <header><div><p className="eyebrow">League check-in</p><h2>{status.submitted.length} of {total} locked in</h2></div><span className={`submission-count ${status.outstanding.length?"waiting":"complete"}`}>{status.outstanding.length?`${status.outstanding.length} outstanding`:"Everyone’s in"}</span></header>
-    <div className="submission-groups">
-      <div className="submission-group submitted"><span><CheckCircle2 size={14}/> Locked in</span><div className="submission-people">{status.submitted.map(player=><Link href={`/players/${player.id}`} title={`${player.name}${player.source==="auto"?" · auto-picked":""}`} key={player.id}><ClubCrest seed={player.id} label={player.name} imageUrl={player.crestUrl} size="sm"/><b>{player.name}</b>{player.source==="auto"&&<small>Auto</small>}</Link>)}</div></div>
-      <div className="submission-group outstanding"><span><Clock3 size={14}/> Still outstanding</span><div className="submission-people">{status.outstanding.length?status.outstanding.map(player=><Link href={`/players/${player.id}`} title={player.name} key={player.id}><ClubCrest seed={player.id} label={player.name} imageUrl={player.crestUrl} size="sm"/><b>{player.name}</b></Link>):<p>None. Miracles happen.</p>}</div></div>
-    </div>
-    {locked&&automatic>0&&<p className="submission-note">{automatic} {automatic===1?"card was":"cards were"} filled by the weekly auto-pick rule.</p>}
-  </section>;
 }
 
 const formatWeeklyPoints=(value:number)=>Number.isInteger(value)?String(value):value.toFixed(2).replace(/0+$/,"").replace(/\.$/,"");
@@ -223,16 +209,17 @@ function LockedPickReceipt({gotw,gotwPick,gotwStake,other,otherPick,otherStake,s
   </section>;
 }
 
-function StandingsSnapshot({rows,previousWeekNumber}:{rows:PicksPageData["standings"];previousWeekNumber?:number}){
+function StandingsSnapshot({rows,previousWeekNumber,submissionStatus}:{rows:PicksPageData["standings"];previousWeekNumber?:number;submissionStatus:PicksPageData["submissionStatus"]}){
   const [tab,setTab]=useState<"first"|"second"|"overall">("overall");
   const [project,setProject]=useState(false);
   const selected=tab==="overall"&&project?rows.projected:rows[tab];
   const sorted=[...selected].sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
+  const submitted=new Map(submissionStatus.submitted.map(player=>[player.id,player.source]));
   return <section className="home-standings"><div className="section-label"><div><p className="eyebrow">At a glance</p><h2>League table</h2></div><a className="text-link" href="/standings">Full table →</a></div>
     <div className="home-standing-controls"><div className="mini-segments" aria-label="Standings period">{([["first","First"],["second","Second"],["overall","Full"]] as const).map(([value,label])=><button type="button" key={value} onClick={()=>{setTab(value);if(value!=="overall")setProject(false)}} className={tab===value?"active":""}>{label}</button>)}</div>
     {tab==="overall"&&<label className="projection-toggle"><input type="checkbox" checked={project} onChange={event=>setProject(event.target.checked)}/><span/><b>Include season bets</b></label>}</div>
     {tab==="overall"&&project&&<p className="projection-note">Assumes today&apos;s league and market results are final.</p>}
-    <div className="card table compact-table home-league-table"><div className="standing-row standing-head" aria-hidden="true"><span/><span/><span>LW</span><span>Total</span></div>{sorted.map((row,index)=><div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><Link className="player player-link" href={`/players/${row.id}`}><ClubCrest seed={row.id} label={row.name} imageUrl={row.crestUrl} size="sm"/><span>{row.name}{row.featuredStreak>=2&&<i className="streak-alert" title={row.featuredStreak>=3?`${row.featuredStreak} straight — another win earns +10`:"Two straight — the next featured-game win earns +10"} aria-label="Featured-game streak bonus on the line">🔥</i>}{row.me&&<small className="you-label">You</small>}</span></Link>{previousWeekNumber?<Link className="last-week-points" href={`/players/${row.id}?week=${previousWeekNumber}#week-${previousWeekNumber}`} title={`See Week ${previousWeekNumber} score breakdown`}>{formatWeeklyPoints(row.lastWeek)}</Link>:<span className="last-week-points">{formatWeeklyPoints(row.lastWeek)}</span>}<span className="points">{row.score}</span></div>)}</div>
+    <div className="card table compact-table home-league-table"><div className="standing-row standing-head" aria-hidden="true"><span/><span/><span>LW</span><span>Total</span></div>{sorted.map((row,index)=>{const source=submitted.get(row.id);return <div className={`standing-row ${row.me?"me":""}`} key={row.id}><span className="rank">{index+1}</span><Link className="player player-link" href={`/players/${row.id}`}><ClubCrest seed={row.id} label={row.name} imageUrl={row.crestUrl} size="sm"/><span>{row.name}{row.featuredStreak>=2&&<i className="streak-alert" title={row.featuredStreak>=3?`${row.featuredStreak} straight — another win earns +10`:"Two straight — the next featured-game win earns +10"} aria-label="Featured-game streak bonus on the line">🔥</i>}{row.me&&<small className="you-label">You</small>}</span><i className={`player-pick-status ${source?"submitted":"outstanding"}`} title={source?source==="auto"?"Picks locked · auto-picked":"Picks locked":"Picks outstanding"} aria-label={source?"Picks locked":"Picks outstanding"}>{source?<CheckCircle2 size={14}/>:<Clock3 size={14}/>}</i></Link>{previousWeekNumber?<Link className="last-week-points" href={`/players/${row.id}?week=${previousWeekNumber}#week-${previousWeekNumber}`} title={`See Week ${previousWeekNumber} score breakdown`}>{formatWeeklyPoints(row.lastWeek)}</Link>:<span className="last-week-points">{formatWeeklyPoints(row.lastWeek)}</span>}<span className="points">{row.score}</span></div>})}</div>
   </section>;
 }
 
