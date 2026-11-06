@@ -8,7 +8,7 @@ import {featuredStreakMap,type FeaturedStreakSubmission} from "@/lib/featured-st
 export const metadata:Metadata={title:"Picks"};export const dynamic="force-dynamic";
 type OddsRow={home:number|string;draw:number|string;away:number|string;captured_at:string};
 type FixtureRow={id:string;kickoff_at:string;is_gotw:boolean;is_manager_special:boolean;status:string;home_score:number|null;away_score:number|null;home:{name:string}|null;away:{name:string}|null;fixture_odds:OddsRow[]};
-type ProfileRow={id:string;display_name:string;crest_url:string|null};
+type ProfileRow={id:string;display_name:string;crest_url:string|null;created_at:string};
 type ChallengeRow={opponent_id:string};
 type WeekChallengeRow={
   id:string;challenger_id:string;opponent_id:string;challenger_weekly_net:number|string|null;opponent_weekly_net:number|string|null;
@@ -44,7 +44,7 @@ export default async function PicksPage(){
     supabase.from("fixtures").select("id,kickoff_at,is_gotw,is_manager_special,status,home_score,away_score,home:teams!fixtures_home_team_id_fkey(name),away:teams!fixtures_away_team_id_fkey(name),fixture_odds(home,draw,away,captured_at)").eq("competition_week_id",week.id).eq("is_eligible",true).order("kickoff_at"),
     supabase.from("weekly_submissions").select("source,commentary,picks(fixture_id,kind,selected_outcome,stake)").eq("user_id",user.id).eq("competition_week_id",week.id).maybeSingle(),
     supabase.from("points_ledger").select("amount").eq("user_id",user.id),
-    supabase.from("profiles").select("id,display_name,crest_url").order("display_name"),
+    supabase.from("profiles").select("id,display_name,crest_url,created_at").order("display_name"),
     // A challenge can be used against each opponent only once for the entire season.
     supabase.from("challenges").select("opponent_id").eq("challenger_id",user.id),
     supabase.rpc("get_standings",{p_half:"first"}),
@@ -95,6 +95,8 @@ export default async function PicksPage(){
   const rank=Math.max(1,standingRows.findIndex(row=>row.user_id===user.id)+1);
   const used=new Set(((challenges??[]) as ChallengeRow[]).map(c=>c.opponent_id));
   const profileRows=(profiles??[]) as ProfileRow[];const crestMap=new Map(profileRows.map(profile=>[profile.id,profile.crest_url]));
+  const eligibleProfiles=profileRows.filter(profile=>Date.parse(profile.created_at)<Date.parse(week.lock_at));
+  const submissionByPlayer=new Map(leagueRows.map(row=>[row.user_id,row.source]));
   const opponentRows=profileRows.filter(profile=>profile.id!==user.id);
   const fixtureNames=new Map(fixtures.map(f=>[f.id,`${f.home} vs ${f.away}`]));
   const previousResults=((previousSubmissions??[]) as unknown as PreviousSubmissionRow[])
@@ -123,6 +125,10 @@ export default async function PicksPage(){
     bankroll:(ledger??[]).reduce((sum,row)=>sum+Number(row.amount),0),rank,fixtures,
     existing:{gotw:existing.find(p=>p.kind==="gotw"),own:existing.find(p=>p.kind==="own"),specials:existing.filter(p=>p.kind==="special"),source:submission?.source,commentary:submission?.commentary??""},
     currentUserId:user.id,conversations:conversationRows,
+    submissionStatus:{
+      submitted:eligibleProfiles.filter(profile=>submissionByPlayer.has(profile.id)).map(profile=>({id:profile.id,name:profile.display_name,crestUrl:profile.crest_url,source:submissionByPlayer.get(profile.id)!})),
+      outstanding:eligibleProfiles.filter(profile=>!submissionByPlayer.has(profile.id)).map(profile=>({id:profile.id,name:profile.display_name,crestUrl:profile.crest_url})),
+    },
     batesColbyBoard:batesColbyFixture&&batesColbyLocked?{
       kickoff:batesColbyFixture.kickoff,
       final:["final","finished"].includes(batesColbyFixture.status?.toLowerCase()??""),

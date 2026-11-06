@@ -17,6 +17,7 @@ export type PicksPageData={
   existing:{gotw?:ExistingPick;own?:ExistingPick;specials:ExistingPick[];source?:string;commentary?:string};opponents:{id:string;display_name:string}[];challengeTokens:number;locked:boolean;
   personalChallenges:{id:string;direction:"incoming"|"outgoing";otherId:string;otherName:string;otherCrestUrl:string|null}[];
   currentUserId:string;conversations:WeeklyConversation[];
+  submissionStatus:{submitted:{id:string;name:string;crestUrl:string|null;source:"manual"|"auto"}[];outstanding:{id:string;name:string;crestUrl:string|null}[]};
   batesColbyBoard?:{kickoff:string;final:boolean;homeScore:number|null;awayScore:number|null;colby:BonusBoardPlayer[];draw:BonusBoardPlayer[];bates:BonusBoardPlayer[];mentalHealth:BonusBoardPlayer[]};
   standings:{
     first:{id:string;name:string;crestUrl:string|null;score:number;lastWeek:number;featuredStreak:number;me:boolean}[];
@@ -119,7 +120,7 @@ function LivePicks({data}:{data:PicksPageData}){
         specialPicks:specials.filter(special=>!hasFixtureLocked(special)&&Boolean(specialPicks[special.id])).map(special=>({fixtureId:special.id,outcome:specialPicks[special.id]!})),
       }).then(result=>{
         if(result.error){setSaveStatus("error");setSaveError(result.error);return}
-        lastSaved.current=signature;setSaveStatus("saved");setSaveError("");
+        lastSaved.current=signature;setSaveStatus("saved");setSaveError("");router.refresh();
       });
     },650);
     return ()=>window.clearTimeout(timer);
@@ -129,6 +130,7 @@ function LivePicks({data}:{data:PicksPageData}){
   },[data.opponents,opponent]);
   return <AppShell><main className="content content-wide picks-page">
     <div className="picks-topline"><div><span>{data.week.competition} · Week {data.week.number}</span><b>{data.week.label}</b></div><span className={`pill ${data.locked?"":"live"}`}><Clock3 size={13}/>{data.locked?"Locked":`Locks ${data.week.lockLabel}`}</span></div>
+    <SubmissionStatus status={data.submissionStatus} locked={data.locked}/>
     {data.previousWeek&&<WeeklyRecap recap={data.previousWeek}/>}
     {data.locked&&<ThisWeekStandings entries={data.leaguePicks} challenges={data.weekChallenges} week={data.week} currentUserId={data.currentUserId}/>}
     <div className="picks-layout"><div>
@@ -164,6 +166,19 @@ function LivePicks({data}:{data:PicksPageData}){
       <StandingsSnapshot rows={data.standings} previousWeekNumber={data.previousWeek?.number}/>
     </aside></div>
   </main></AppShell>;
+}
+
+function SubmissionStatus({status,locked}:{status:PicksPageData["submissionStatus"];locked:boolean}){
+  const total=status.submitted.length+status.outstanding.length;
+  const automatic=status.submitted.filter(player=>player.source==="auto").length;
+  return <section className="card submission-status" aria-label="Weekly pick submission status">
+    <header><div><p className="eyebrow">League check-in</p><h2>{status.submitted.length} of {total} locked in</h2></div><span className={`submission-count ${status.outstanding.length?"waiting":"complete"}`}>{status.outstanding.length?`${status.outstanding.length} outstanding`:"Everyone’s in"}</span></header>
+    <div className="submission-groups">
+      <div className="submission-group submitted"><span><CheckCircle2 size={14}/> Locked in</span><div className="submission-people">{status.submitted.map(player=><Link href={`/players/${player.id}`} title={`${player.name}${player.source==="auto"?" · auto-picked":""}`} key={player.id}><ClubCrest seed={player.id} label={player.name} imageUrl={player.crestUrl} size="sm"/><b>{player.name}</b>{player.source==="auto"&&<small>Auto</small>}</Link>)}</div></div>
+      <div className="submission-group outstanding"><span><Clock3 size={14}/> Still outstanding</span><div className="submission-people">{status.outstanding.length?status.outstanding.map(player=><Link href={`/players/${player.id}`} title={player.name} key={player.id}><ClubCrest seed={player.id} label={player.name} imageUrl={player.crestUrl} size="sm"/><b>{player.name}</b></Link>):<p>None. Miracles happen.</p>}</div></div>
+    </div>
+    {locked&&automatic>0&&<p className="submission-note">{automatic} {automatic===1?"card was":"cards were"} filled by the weekly auto-pick rule.</p>}
+  </section>;
 }
 
 const formatWeeklyPoints=(value:number)=>Number.isInteger(value)?String(value):value.toFixed(2).replace(/0+$/,"").replace(/\.$/,"");

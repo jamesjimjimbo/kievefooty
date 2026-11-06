@@ -309,6 +309,24 @@ h2 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; }
 .picks-topline > div { display: flex; align-items: baseline; gap: 7px; min-width: 0; }
 .picks-topline > div span { color: var(--primary); font-size: 9px; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
 .picks-topline > div b { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.submission-status { margin-bottom: 18px; padding: 16px; }
+.submission-status header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 13px; }
+.submission-status header h2 { margin: 2px 0 0; font-size: 20px; }
+.submission-count { flex: 0 0 auto; padding: 7px 10px; border: 1px solid #f0c982; border-radius: 999px; background: #fff7e6; color: #8a5700; font-size: 11px; font-weight: 900; }
+.submission-count.complete { border-color: #a9e7dc; background: var(--mint); color: #087f72; }
+.submission-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.submission-group { min-width: 0; padding: 12px; border-radius: 14px; background: #f7f8ff; }
+.submission-group.outstanding { background: #fff9ee; }
+.submission-group > span { display: flex; align-items: center; gap: 6px; margin-bottom: 9px; color: #087f72; font-size: 10px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+.submission-group.outstanding > span { color: #9a6200; }
+.submission-people { display: flex; flex-wrap: wrap; gap: 7px; }
+.submission-people a { display: inline-flex; align-items: center; gap: 6px; min-width: 0; padding: 4px 8px 4px 4px; border: 1px solid #e5e6f3; border-radius: 999px; background: white; color: var(--ink); font-size: 11px; text-decoration: none; }
+.submission-people a:hover { border-color: var(--primary); }
+.submission-people a b { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.submission-people a small { color: var(--primary); font-size: 8px; font-weight: 900; letter-spacing: .05em; text-transform: uppercase; }
+.submission-people p,.submission-note { margin: 0; color: var(--muted); font-size: 11px; }
+.submission-note { margin-top: 10px; }
+@media (max-width: 680px) { .submission-groups { grid-template-columns: 1fr; } .submission-status header { align-items: flex-start; } .submission-status header h2 { font-size: 18px; } }
 .weekly-recap {
   display: grid;
   gap: 12px;
