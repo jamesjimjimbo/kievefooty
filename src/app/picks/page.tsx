@@ -34,9 +34,7 @@ export default async function PicksPage(){
   const {data:{user}}=await supabase.auth.getUser();if(!user)redirect("/auth/sign-in");
   const {data:openWeek}=await supabase.from("competition_weeks").select("*").eq("status","open").eq("is_active_betting_week",true).order("number").limit(1).maybeSingle();
   const {data:lockedWeek}=openWeek?{data:null}:await supabase.from("competition_weeks").select("*").eq("status","locked").eq("is_active_betting_week",true).order("number",{ascending:false}).limit(1).maybeSingle();
-  const activeWeek=openWeek??lockedWeek;
-  const {data:latestSettled}=activeWeek?{data:null}:await supabase.from("competition_weeks").select("*").eq("status","settled").eq("is_active_betting_week",true).order("start_date",{ascending:false}).limit(1).maybeSingle();
-  const week=activeWeek??latestSettled;
+  const week=openWeek??lockedWeek;
   if(!week)return <PicksFlow data={null}/>;
   const locked=week.status!=="open"||hasWeekLocked(week.lock_at);
   const {data:previousWeek}=await supabase.from("competition_weeks").select("id,number,label").eq("status","settled").lt("start_date",week.start_date).order("start_date",{ascending:false}).limit(1).maybeSingle();
