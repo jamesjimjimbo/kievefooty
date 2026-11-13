@@ -122,7 +122,7 @@ function SpecialMarketPredictionGrid({market,entrants}:{market:RevealedMarket;en
   const selections=[...new Set(market.entries.flatMap(entry=>entry.selections))].sort((a,b)=>a.localeCompare(b));
   const picks=new Set(market.entries.flatMap(entry=>entry.selections.map(selection=>`${entry.userId}:${selection}`)));
   return <div className="golden-boot-grid">
-    <div className="section-label"><div><p className="eyebrow">USMNT special</p><h2>Next-manager picks</h2><p className="prediction-wall-intro">Who the league backed to manage the first USMNT match after Mauricio Pochettino.</p></div></div>
+    <div className="section-label"><div><p className="eyebrow">USMNT special</p><h2>Next permanent-manager picks</h2><p className="prediction-wall-intro">Who the league backed to become the next permanent USMNT manager after Mauricio Pochettino.</p></div></div>
     <PredictionMatrix title="Next USMNT manager predictions" rowLabel="Candidate" rows={selections} entrants={entrants} renderCell={(selection,entrant)=>picks.has(`${entrant.id}:${selection}`)?<span className="golden-boot-pick" title="Next USMNT manager pick">🇺🇸</span>:null}/>
   </div>;
 }
