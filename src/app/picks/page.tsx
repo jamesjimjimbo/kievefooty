@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { PicksFlow, type PicksPageData } from "@/components/picks-flow";
+import { PicksFlow,StandingsSnapshot,type PicksPageData } from "@/components/picks-flow";
+import { AppShell } from "@/components/app-shell";
+import { SeasonMarketCard,type SeasonMarket } from "@/components/season-market-card";
 import { createClient } from "@/lib/supabase/server";
 import type { Fixture, Outcome } from "@/lib/demo-data";
 import type { WeeklyConversation,WeeklyReaction } from "@/lib/weekly-conversations";
@@ -35,7 +37,42 @@ export default async function PicksPage(){
   const {data:openWeek}=await supabase.from("competition_weeks").select("*").eq("status","open").eq("is_active_betting_week",true).order("number").limit(1).maybeSingle();
   const {data:lockedWeek}=openWeek?{data:null}:await supabase.from("competition_weeks").select("*").eq("status","locked").eq("is_active_betting_week",true).order("number",{ascending:false}).limit(1).maybeSingle();
   const week=openWeek??lockedWeek;
-  if(!week)return <PicksFlow data={null}/>;
+  if(!week){
+    const [{data:poll},{data:idleProfiles},{data:idleFirst},{data:idleSecond},{data:idleOverall},{data:idleProjected},{data:lastSettled}]=await Promise.all([
+      supabase.from("season_markets").select("id,slug,title,description,selection_help,min_selections,max_selections,payout_label,lock_at,status,season_market_options(id,label,sort_order,odds),season_market_entries(option_ids)").eq("slug","next-usmnt-manager").eq("season_market_entries.user_id",user.id).maybeSingle(),
+      supabase.from("profiles").select("id,display_name,crest_url"),
+      supabase.rpc("get_standings",{p_half:"first"}),
+      supabase.rpc("get_standings",{p_half:"second"}),
+      supabase.rpc("get_standings",{p_half:null}),
+      supabase.rpc("get_projected_standings"),
+      supabase.from("competition_weeks").select("id,number").eq("status","settled").order("start_date",{ascending:false}).limit(1).maybeSingle(),
+    ]);
+    if(!poll)return <PicksFlow data={null}/>;
+    const {data:lastScores}=lastSettled?await supabase.rpc("get_weekly_scores",{p_week_id:lastSettled.id}):{data:[]};
+    const idleCrests=new Map((idleProfiles??[]).map(profile=>[profile.id,profile.crest_url]));
+    const idleLastWeek=new Map(((lastScores??[]) as PreviousWeekScoreRow[]).map(entry=>[entry.user_id,Number(entry.weekly_score)]));
+    const idleStanding=(row:StandingRow)=>({id:row.user_id,name:row.display_name,crestUrl:idleCrests.get(row.user_id)??null,score:Number(row.score),lastWeek:Math.round((idleLastWeek.get(row.user_id)??0)*100)/100,featuredStreak:0,me:row.user_id===user.id});
+    const idleStandings:PicksPageData["standings"]={
+      first:((idleFirst??[]) as StandingRow[]).map(idleStanding),
+      second:((idleSecond??[]) as StandingRow[]).map(idleStanding),
+      overall:((idleOverall??[]) as StandingRow[]).map(idleStanding),
+      projected:((idleProjected??idleOverall??[]) as ProjectedStandingRow[]).map(row=>({...idleStanding(row),seasonProjection:Number(row.season_projection??0)})),
+    };
+    const selected=(poll.season_market_entries?.[0]?.option_ids??[]) as string[];
+    const market:SeasonMarket={
+      id:poll.id,slug:poll.slug,title:poll.title,description:poll.description,
+      selectionHelp:poll.selection_help,minSelections:poll.min_selections,maxSelections:poll.max_selections,
+      payoutLabel:poll.payout_label,
+      lockLabel:`${new Intl.DateTimeFormat("en-US",{weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(poll.lock_at))} ET`,
+      status:poll.status==="open"&&Date.now()>=Date.parse(poll.lock_at)?"locked":poll.status,
+      selected,completed:selected.length>0,
+      options:[...(poll.season_market_options??[])].sort((a,b)=>a.sort_order-b.sort_order).map(option=>({...option,odds:option.odds===null?null:Number(option.odds)})),
+    };
+    return <AppShell><main className="content content-wide picks-page">
+      <div className="page-head"><div><p className="eyebrow">International-break special</p><h1>One thing to bet on.</h1><p className="subtle">No weekly card this weekend—but American soccer has provided administrative chaos.</p></div></div>
+      <div className="picks-layout"><div><div className="market-grid"><SeasonMarketCard market={market}/></div></div><aside className="picks-sidebar"><StandingsSnapshot rows={idleStandings} previousWeekNumber={lastSettled?.number}/></aside></div>
+    </main></AppShell>;
+  }
   const locked=week.status!=="open"||hasWeekLocked(week.lock_at);
   const {data:previousWeek}=await supabase.from("competition_weeks").select("id,number,label").eq("status","settled").lt("start_date",week.start_date).order("start_date",{ascending:false}).limit(1).maybeSingle();
   const [{data:rows},{data:submission},{data:ledger},{data:profiles},{data:challenges},{data:firstStandings},{data:secondStandings},{data:overallStandings},{data:projectedStandings},{data:leagueSubmissions},{data:previousSubmissions},{data:previousLedger},{data:weekChallenges},{data:streakData}]=await Promise.all([
