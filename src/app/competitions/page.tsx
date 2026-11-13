@@ -89,6 +89,7 @@ function PredictionWall({markets,profiles,leagueTable}:{markets:RevealedMarket[]
   const teamMarkets=markets.filter(market=>TEAM_MARKERS[market.slug]);
   const cupMarkets=markets.filter(market=>CUP_MARKETS[market.slug]);
   const goldenBoot=markets.find(market=>market.slug==="golden-boot");
+  const usmntManager=markets.find(market=>market.slug==="next-usmnt-manager");
   const entrants=profiles.length?profiles:uniqueEntrants(markets);
   const teams=[...new Set(teamMarkets.flatMap(market=>market.options))].sort((a,b)=>a.localeCompare(b));
   const goldenBootPlayers=[...new Set(goldenBoot?.entries.flatMap(entry=>entry.selections)??[])].sort((a,b)=>a.localeCompare(b));
@@ -113,7 +114,17 @@ function PredictionWall({markets,profiles,leagueTable}:{markets:RevealedMarket[]
       <div className="section-label"><div><p className="eyebrow">Golden Boot</p><h2>Top-scorer picks</h2><p className="prediction-wall-intro">Only selected players are shown.</p></div></div>
       <PredictionMatrix title="Golden Boot predictions" rowLabel="Player" rows={goldenBootPlayers} entrants={entrants} renderCell={(player,entrant)=>goldenBootPicks.has(`${entrant.id}:${player}`)?<span className="golden-boot-pick" title="Golden Boot pick">⚽</span>:null}/>
     </div>}
+    {usmntManager&&<SpecialMarketPredictionGrid market={usmntManager} entrants={entrants}/>}
   </section>;
+}
+
+function SpecialMarketPredictionGrid({market,entrants}:{market:RevealedMarket;entrants:ProfileRow[]}){
+  const selections=[...new Set(market.entries.flatMap(entry=>entry.selections))].sort((a,b)=>a.localeCompare(b));
+  const picks=new Set(market.entries.flatMap(entry=>entry.selections.map(selection=>`${entry.userId}:${selection}`)));
+  return <div className="golden-boot-grid">
+    <div className="section-label"><div><p className="eyebrow">USMNT special</p><h2>Next-manager picks</h2><p className="prediction-wall-intro">Who the league backed to manage the first USMNT match after Mauricio Pochettino.</p></div></div>
+    <PredictionMatrix title="Next USMNT manager predictions" rowLabel="Candidate" rows={selections} entrants={entrants} renderCell={(selection,entrant)=>picks.has(`${entrant.id}:${selection}`)?<span className="golden-boot-pick" title="Next USMNT manager pick">🇺🇸</span>:null}/>
+  </div>;
 }
 
 const POSITION_MARKETS:Record<string,{points:number;symbol:string;label:string;className:string}>={
