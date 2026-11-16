@@ -29,7 +29,26 @@ type PreviousSubmissionRow={
   picks:{stake:number|string;odds:number|string;is_correct:boolean|null}[];
 };
 type PreviousWeekScoreRow={user_id:string;weekly_score:number|string};
+type PollRow={
+  id:string;slug:string;title:string;description:string;selection_help:string;min_selections:number;max_selections:number;
+  payout_label:string;lock_at:string;status:string;
+  season_market_options:{id:string;label:string;sort_order:number;odds:number|string|null}[];
+  season_market_entries:{option_ids:string[]}[];
+};
 function hasWeekLocked(lockAt:string){return new Date().getTime()>=Date.parse(lockAt)}
+
+function mapPoll(row:PollRow):SeasonMarket{
+  const selected=row.season_market_entries?.[0]?.option_ids??[];
+  return {
+    id:row.id,slug:row.slug,title:row.title,description:row.description,
+    selectionHelp:row.selection_help,minSelections:row.min_selections,maxSelections:row.max_selections,
+    payoutLabel:row.payout_label,
+    lockLabel:`${new Intl.DateTimeFormat("en-US",{weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(row.lock_at))} ET`,
+    status:row.status==="open"&&Date.now()>=Date.parse(row.lock_at)?"locked":row.status,
+    selected,completed:selected.length>0,
+    options:[...(row.season_market_options??[])].sort((a,b)=>a.sort_order-b.sort_order).map(option=>({...option,odds:option.odds===null?null:Number(option.odds)})),
+  };
+}
 
 export default async function PicksPage(){
   const supabase=await createClient();if(!supabase)redirect("/auth/sign-in?error=Supabase+is+not+configured");
@@ -58,23 +77,17 @@ export default async function PicksPage(){
       overall:((idleOverall??[]) as StandingRow[]).map(idleStanding),
       projected:((idleProjected??idleOverall??[]) as ProjectedStandingRow[]).map(row=>({...idleStanding(row),seasonProjection:Number(row.season_projection??0)})),
     };
-    const selected=(poll.season_market_entries?.[0]?.option_ids??[]) as string[];
-    const market:SeasonMarket={
-      id:poll.id,slug:poll.slug,title:poll.title,description:poll.description,
-      selectionHelp:poll.selection_help,minSelections:poll.min_selections,maxSelections:poll.max_selections,
-      payoutLabel:poll.payout_label,
-      lockLabel:`${new Intl.DateTimeFormat("en-US",{weekday:"long",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/New_York"}).format(new Date(poll.lock_at))} ET`,
-      status:poll.status==="open"&&Date.now()>=Date.parse(poll.lock_at)?"locked":poll.status,
-      selected,completed:selected.length>0,
-      options:[...(poll.season_market_options??[])].sort((a,b)=>a.sort_order-b.sort_order).map(option=>({...option,odds:option.odds===null?null:Number(option.odds)})),
-    };
+    const market=mapPoll(poll as unknown as PollRow);
     return <AppShell><main className="content content-wide picks-page">
       <div className="page-head"><div><p className="eyebrow">International-break special</p><h1>One thing to bet on.</h1><p className="subtle">No weekly card this weekend—but American soccer has provided administrative chaos.</p></div></div>
       <div className="picks-layout"><div><div className="market-grid"><SeasonMarketCard market={market}/></div></div><aside className="picks-sidebar"><StandingsSnapshot rows={idleStandings} previousWeekNumber={lastSettled?.number}/></aside></div>
     </main></AppShell>;
   }
   const locked=week.status!=="open"||hasWeekLocked(week.lock_at);
-  const {data:previousWeek}=await supabase.from("competition_weeks").select("id,number,label").eq("status","settled").lt("start_date",week.start_date).order("start_date",{ascending:false}).limit(1).maybeSingle();
+  const [{data:previousWeek},{data:activePoll}]=await Promise.all([
+    supabase.from("competition_weeks").select("id,number,label").eq("status","settled").lt("start_date",week.start_date).order("start_date",{ascending:false}).limit(1).maybeSingle(),
+    supabase.from("season_markets").select("id,slug,title,description,selection_help,min_selections,max_selections,payout_label,lock_at,status,season_market_options(id,label,sort_order,odds),season_market_entries(option_ids)").eq("slug","next-usmnt-manager").eq("season_market_entries.user_id",user.id).maybeSingle(),
+  ]);
   const [{data:rows},{data:submission},{data:ledger},{data:profiles},{data:challenges},{data:firstStandings},{data:secondStandings},{data:overallStandings},{data:projectedStandings},{data:leagueSubmissions},{data:previousSubmissions},{data:previousLedger},{data:weekChallenges},{data:streakData}]=await Promise.all([
     supabase.from("fixtures").select("id,kickoff_at,is_gotw,is_manager_special,status,home_score,away_score,home:teams!fixtures_home_team_id_fkey(name),away:teams!fixtures_away_team_id_fkey(name),fixture_odds(home,draw,away,captured_at)").eq("competition_week_id",week.id).eq("is_eligible",true).order("kickoff_at"),
     supabase.from("weekly_submissions").select("source,commentary,picks(fixture_id,kind,selected_outcome,stake)").eq("user_id",user.id).eq("competition_week_id",week.id).maybeSingle(),
@@ -200,6 +213,7 @@ export default async function PicksPage(){
       winner:previousResults[0],
       loser:previousResults[previousResults.length-1],
     }:undefined,
+    poll:activePoll?mapPoll(activePoll as unknown as PollRow):undefined,
   };
   return <PicksFlow data={data}/>;
 }

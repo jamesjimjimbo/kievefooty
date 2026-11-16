@@ -6,6 +6,7 @@ import { CheckCircle2,Clock3,Hammer,LoaderCircle,LockKeyhole,MessageCircle,Refre
 import type { Fixture,Outcome } from "@/lib/demo-data";
 import { AppShell } from "@/components/app-shell";
 import { ClubCrest } from "@/components/club-crest";
+import { SeasonMarketCard,type SeasonMarket } from "@/components/season-market-card";
 import { WeeklyConversations } from "@/components/weekly-conversations";
 import { createChallenge,saveWeeklyComment,saveWeeklyPicks,saveWeeklySpecialPick } from "@/app/picks/actions";
 import type { WeeklyConversation } from "@/lib/weekly-conversations";
@@ -28,6 +29,7 @@ export type PicksPageData={
   leaguePicks:{userId:string;name:string;crestUrl:string|null;source:"manual"|"auto";picks:{fixtureId:string;fixture:string;kind:"gotw"|"own"|"special";outcome:Outcome;stake:number;odds:number;isCorrect:boolean|null}[]}[];
   weekChallenges:{id:string;challengerId:string;opponentId:string;challenger:string;challengerCrestUrl:string|null;opponent:string;opponentCrestUrl:string|null;challengerNet:number|null;opponentNet:number|null}[];
   previousWeek?:{number:number;label:string;winner:{id:string;name:string;crestUrl:string|null;score:number};loser:{id:string;name:string;crestUrl:string|null;score:number}};
+  poll?:SeasonMarket;
 };
 
 function FixtureCard({fixture,selection,onSelect,stake,setStake,label,disabled,fixedStake=false,allowedOutcomes=["home","draw","away"]}:{fixture:Fixture;selection?:Outcome;onSelect:(o:Outcome)=>void;stake:number;setStake?:(n:number)=>void;label?:string;disabled?:boolean;fixedStake?:boolean;allowedOutcomes?:Outcome[]}) {
@@ -129,6 +131,7 @@ function LivePicks({data}:{data:PicksPageData}){
     if(!data.opponents.some(player=>player.id===opponent))setOpponent(data.opponents[0]?.id??"");
   },[data.opponents,opponent]);
   return <AppShell><main className="content content-wide picks-page">
+    {data.poll&&<section className="weekly-poll"><div className="section-label"><div><p className="eyebrow">International-break carryover</p><h2>USMNT manager market</h2><p className="subtle">This five-point market has its own deadline and stays separate from the weekly ten-point card.</p></div></div><div className="market-grid"><SeasonMarketCard market={data.poll}/></div></section>}
     <div className="picks-topline"><div><span>{data.week.competition} · Week {data.week.number}</span><b>{data.week.label}</b></div><span className={`pill ${data.locked?"":"live"}`}><Clock3 size={13}/>{data.locked?"Locked":`Locks ${data.week.lockLabel}`}</span></div>
     {data.previousWeek&&<WeeklyRecap recap={data.previousWeek}/>}
     {data.locked&&<ThisWeekStandings entries={data.leaguePicks} challenges={data.weekChallenges} week={data.week} currentUserId={data.currentUserId}/>}
